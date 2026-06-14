@@ -447,20 +447,22 @@ The integrated console shows live output and cleans ANSI/control characters when
 
 ---
 
-## Suggested Roadmap
+## Roadmap
 
-- Light/dark theme switch.
-- More customizable dashboard.
-- Installed shader manager.
-- Installed resource pack manager.
-- Real download progress for mods, Java runtimes, assets, and libraries.
-- Quilt support.
-- Forge/NeoForge support.
-- Modpack importing.
-- Advanced export options.
-- Automatic incompatible mod detection.
-- Per-instance Java/JVM arguments.
-- Per-instance icon picker.
+- [ ] Light/dark theme switch.
+- [ ] More customizable dashboard.
+- [ ] Installed shader manager.
+- [ ] Installed resource pack manager.
+- [ ] Real download progress for mods, Java runtimes, assets, and libraries.
+- [ ] Quilt support.
+- [ ] Forge/NeoForge support.
+- [ ] Modpack importing.
+- [ ] Advanced export options.
+- [ ] Automatic incompatible mod detection.
+- [ ] Per-instance Java/JVM arguments.
+- [ ] Per-instance icon picker.
+- [ ] CurseForge Compatibility
+- [ ] Select Version for Mods (via CurseForge or Modrinth)
 
 ---
 
