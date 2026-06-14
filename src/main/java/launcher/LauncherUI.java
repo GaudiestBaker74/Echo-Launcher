@@ -93,6 +93,166 @@ public class LauncherUI extends Application {
         }
     });
 
+    private static class ContentProviderOption {
+        String id;
+        String name;
+        String iconPath;
+        String fallbackText;
+        String fallbackStyleClass;
+
+        ContentProviderOption(String id, String name, String iconPath, String fallbackText, String fallbackStyleClass) {
+            this.id = id;
+            this.name = name;
+            this.iconPath = iconPath;
+            this.fallbackText = fallbackText;
+            this.fallbackStyleClass = fallbackStyleClass;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    private ComboBox<ContentProviderOption> createProviderComboBox() {
+        final ComboBox<ContentProviderOption> providerBox = new ComboBox<ContentProviderOption>();
+
+        providerBox.getItems().addAll(
+                new ContentProviderOption(
+                        "modrinth",
+                        "Modrinth",
+                        "/icons/modrinth.png",
+                        "M",
+                        "provider-logo-modrinth"
+                ),
+                new ContentProviderOption(
+                        "curseforge",
+                        "CurseForge",
+                        "/icons/curseforge.png",
+                        "C",
+                        "provider-logo-curseforge"
+                )
+        );
+
+        providerBox.getSelectionModel().selectFirst();
+        providerBox.setPrefWidth(170);
+        providerBox.getStyleClass().add("provider-combo");
+
+        providerBox.setCellFactory(new javafx.util.Callback<ListView<ContentProviderOption>, ListCell<ContentProviderOption>>() {
+            @Override
+            public ListCell<ContentProviderOption> call(ListView<ContentProviderOption> listView) {
+                return new ListCell<ContentProviderOption>() {
+                    @Override
+                    protected void updateItem(ContentProviderOption item, boolean empty) {
+                        super.updateItem(item, empty);
+
+                        if (empty || item == null) {
+                            setText(null);
+                            setGraphic(null);
+                            return;
+                        }
+
+                        setText(null);
+                        setGraphic(createProviderGraphic(item));
+                    }
+                };
+            }
+        });
+
+        providerBox.setButtonCell(new ListCell<ContentProviderOption>() {
+            @Override
+            protected void updateItem(ContentProviderOption item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+
+                setText(null);
+                setGraphic(createProviderGraphic(item));
+            }
+        });
+
+        return providerBox;
+    }
+
+    private HBox createProviderGraphic(ContentProviderOption provider) {
+        HBox box = new HBox(8);
+        box.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane logoBox = new StackPane();
+        logoBox.getStyleClass().add("provider-logo-box");
+        logoBox.setMinSize(26, 26);
+        logoBox.setPrefSize(26, 26);
+        logoBox.setMaxSize(26, 26);
+
+        boolean loadedImage = false;
+
+        if (provider.iconPath != null && !provider.iconPath.trim().isEmpty()) {
+            try {
+                java.io.InputStream in = getClass().getResourceAsStream(provider.iconPath);
+
+                if (in != null) {
+                    ImageView imageView = new ImageView(new Image(in, 22, 22, true, true));
+                    imageView.setFitWidth(22);
+                    imageView.setFitHeight(22);
+                    imageView.setPreserveRatio(true);
+                    imageView.setSmooth(true);
+                    imageView.getStyleClass().add("provider-logo-image");
+
+                    logoBox.getChildren().add(imageView);
+                    loadedImage = true;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (!loadedImage) {
+            Label fallback = new Label(provider.fallbackText);
+            fallback.getStyleClass().add("provider-logo-fallback");
+            fallback.getStyleClass().add(provider.fallbackStyleClass);
+            logoBox.getChildren().add(fallback);
+        }
+
+        Label name = new Label(provider.name);
+        name.getStyleClass().add("provider-name");
+
+        box.getChildren().addAll(logoBox, name);
+
+        return box;
+    }
+
+    private boolean isModrinthProvider(ContentProviderOption provider) {
+        return provider == null || "modrinth".equalsIgnoreCase(provider.id);
+    }
+
+    private boolean isCurseForgeProvider(ContentProviderOption provider) {
+        return provider != null && "curseforge".equalsIgnoreCase(provider.id);
+    }
+
+    private void loadProviderPopularContent(final ComboBox<ContentProviderOption> providerBox,
+                                            final ComboBox<String> typeBox,
+                                            final ListView<ModrinthClient.ModResult> resultsList,
+                                            final Button searchBtn,
+                                            final Button installBtn,
+                                            final Label status) {
+        ContentProviderOption provider = providerBox.getValue();
+
+        if (isCurseForgeProvider(provider)) {
+            resultsList.getItems().clear();
+            installBtn.setText("Instalar seleccionado");
+            installBtn.setDisable(true);
+            searchBtn.setDisable(false);
+
+            status.setText("CurseForge seleccionado. Para buscar en CurseForge necesitas configurar una API Key oficial.");
+            return;
+        }
+
+        loadPopularContent(typeBox, resultsList, searchBtn, installBtn, status);
+    }
+
     private final java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(LauncherUI.class);
 
     @Override
@@ -3320,20 +3480,22 @@ public class LauncherUI extends Application {
         HBox searchBox = new HBox(10);
         searchBox.setAlignment(Pos.CENTER_LEFT);
 
+        final ComboBox<ContentProviderOption> providerBox = createProviderComboBox();
+
         final ComboBox<String> typeBox = new ComboBox<String>();
         typeBox.getItems().addAll("Mods", "Texturas", "Shaders");
         typeBox.getSelectionModel().selectFirst();
         typeBox.setPrefWidth(135);
 
         final TextField searchField = new TextField();
-        searchField.setPromptText("Buscar en Modrinth...");
+        searchField.setPromptText("Buscar contenido...");
         searchField.getStyleClass().add("text-field");
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
         final Button searchBtn = new Button("Buscar");
         searchBtn.getStyleClass().add("button");
 
-        searchBox.getChildren().addAll(typeBox, searchField, searchBtn);
+        searchBox.getChildren().addAll(providerBox, typeBox, searchField, searchBtn);
 
         final ListView<ModrinthClient.ModResult> resultsList = new ListView<ModrinthClient.ModResult>();
         resultsList.getStyleClass().add("list-view");
@@ -3447,9 +3609,20 @@ public class LauncherUI extends Application {
             @Override
             public void handle(ActionEvent event) {
                 final String query = searchField.getText() == null ? "" : searchField.getText().trim();
+                final ContentProviderOption provider = providerBox.getValue();
+
+                if (isCurseForgeProvider(provider)) {
+                    resultsList.getItems().clear();
+                    installBtn.setText("Instalar seleccionado");
+                    installBtn.setDisable(true);
+                    searchBtn.setDisable(false);
+
+                    status.setText("CurseForge seleccionado. Falta añadir CurseForge API Key para activar búsquedas y descargas.");
+                    return;
+                }
 
                 if (query.isEmpty()) {
-                    loadPopularContent(typeBox, resultsList, searchBtn, installBtn, status);
+                    loadProviderPopularContent(providerBox, typeBox, resultsList, searchBtn, installBtn, status);
                     return;
                 }
 
@@ -3505,13 +3678,35 @@ public class LauncherUI extends Application {
             @Override
             public void handle(ActionEvent event) {
                 searchField.clear();
-                loadPopularContent(typeBox, resultsList, searchBtn, installBtn, status);
+                loadProviderPopularContent(providerBox, typeBox, resultsList, searchBtn, installBtn, status);
+            }
+        });
+
+        providerBox.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                ContentProviderOption provider = providerBox.getValue();
+
+                if (isModrinthProvider(provider)) {
+                    searchField.setPromptText("Buscar en Modrinth...");
+                } else {
+                    searchField.setPromptText("Buscar en CurseForge...");
+                }
+
+                searchField.clear();
+                loadProviderPopularContent(providerBox, typeBox, resultsList, searchBtn, installBtn, status);
             }
         });
 
         installBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
+                ContentProviderOption provider = providerBox.getValue();
+
+                if (isCurseForgeProvider(provider)) {
+                    status.setText("La instalación desde CurseForge requiere configurar una API Key oficial.");
+                    return;
+                }
                 final ModrinthClient.ModResult selected = resultsList.getSelectionModel().getSelectedItem();
 
                 if (selected == null) {
@@ -3606,7 +3801,7 @@ public class LauncherUI extends Application {
         dialog.setMinHeight(560);
         dialog.show();
 
-        loadPopularContent(typeBox, resultsList, searchBtn, installBtn, status);
+        loadProviderPopularContent(providerBox, typeBox, resultsList, searchBtn, installBtn, status);
     }
 
     private File installContentFromModrinth(ModrinthClient.ModResult selected, String mcVersion) throws Exception {
