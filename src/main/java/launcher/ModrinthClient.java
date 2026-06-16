@@ -349,6 +349,125 @@ public class ModrinthClient {
         return readJsonArray(url.toString());
     }
 
+    public static List<ModVersionFile> getVersionFiles(String projectId,
+                                                       String gameVersion,
+                                                       String projectType) throws Exception {
+        if (projectId == null || projectId.trim().isEmpty()) {
+            throw new Exception("Project ID inválido.");
+        }
+
+        if (projectType == null || projectType.trim().isEmpty()) {
+            projectType = "mod";
+        }
+
+        String normalizedGameVersion = normalizeMinecraftVersion(gameVersion);
+        JsonArray versions = null;
+
+        if ("mod".equalsIgnoreCase(projectType)) {
+            if (normalizedGameVersion != null && !normalizedGameVersion.isEmpty()) {
+                versions = requestVersions(projectId, normalizedGameVersion, "fabric");
+            }
+
+            if (versions == null || versions.size() == 0) {
+                versions = requestVersions(projectId, normalizedGameVersion, null);
+            }
+
+            if (versions == null || versions.size() == 0) {
+                versions = requestVersions(projectId, null, "fabric");
+            }
+        } else {
+            if (normalizedGameVersion != null && !normalizedGameVersion.isEmpty()) {
+                versions = requestVersions(projectId, normalizedGameVersion, null);
+            }
+        }
+
+        if (versions == null || versions.size() == 0) {
+            versions = requestVersions(projectId, null, null);
+        }
+
+        List<ModVersionFile> result = new ArrayList<ModVersionFile>();
+
+        for (JsonElement element : versions) {
+            try {
+                JsonObject versionObj = element.getAsJsonObject();
+
+                String versionId = getString(versionObj, "id", "");
+                String versionName = getString(versionObj, "name", versionId);
+                String versionNumber = getString(versionObj, "version_number", "");
+
+                List<String> dependencies = new ArrayList<String>();
+
+                if (versionObj.has("dependencies") && versionObj.get("dependencies").isJsonArray()) {
+                    JsonArray deps = versionObj.getAsJsonArray("dependencies");
+
+                    for (JsonElement depElement : deps) {
+                        JsonObject dep = depElement.getAsJsonObject();
+
+                        String dependencyType = getString(dep, "dependency_type", "");
+
+                        if (!"required".equalsIgnoreCase(dependencyType)) {
+                            continue;
+                        }
+
+                        String depProjectId = getString(dep, "project_id", "");
+
+                        if (depProjectId != null && !depProjectId.trim().isEmpty() && !dependencies.contains(depProjectId)) {
+                            dependencies.add(depProjectId);
+                        }
+                    }
+                }
+
+                if (!versionObj.has("files") || !versionObj.get("files").isJsonArray()) {
+                    continue;
+                }
+
+                JsonArray files = versionObj.getAsJsonArray("files");
+
+                JsonObject selectedFile = null;
+
+                for (JsonElement f : files) {
+                    JsonObject fileObj = f.getAsJsonObject();
+
+                    if (fileObj.has("primary") && fileObj.get("primary").getAsBoolean()) {
+                        selectedFile = fileObj;
+                        break;
+                    }
+                }
+
+                if (selectedFile == null && files.size() > 0) {
+                    selectedFile = files.get(0).getAsJsonObject();
+                }
+
+                if (selectedFile == null) {
+                    continue;
+                }
+
+                String url = getString(selectedFile, "url", "");
+                String filename = getString(selectedFile, "filename", "");
+
+                if (url.isEmpty() || filename.isEmpty()) {
+                    continue;
+                }
+
+                ModVersionFile file = new ModVersionFile(
+                        url,
+                        filename,
+                        versionId,
+                        projectId,
+                        projectType,
+                        dependencies
+                );
+
+                file.versionId = versionName + (versionNumber.isEmpty() ? "" : " (" + versionNumber + ")");
+
+                result.add(file);
+            } catch (Exception ignored) {
+            }
+        }
+
+        return result;
+    }
+
     private static String normalizeMinecraftVersion(String version) {
         if (version == null) {
             return null;

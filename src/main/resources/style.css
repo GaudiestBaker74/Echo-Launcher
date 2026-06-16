@@ -1099,3 +1099,51 @@
     -fx-font-weight: 800;
     -fx-text-fill: #111827;
 }
+
+.provider-combo .list-cell {
+    -fx-padding: 6px 8px;
+}
+
+.api-key-button {
+    -fx-font-size: 12px;
+}
+
+/* =========================================================
+   Provider Badges
+   ========================================================= */
+
+.provider-badge-modrinth {
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #047857;
+    -fx-background-color: #d1fae5;
+    -fx-background-radius: 999px;
+    -fx-padding: 4px 8px;
+}
+
+.provider-badge-curseforge {
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #c2410c;
+    -fx-background-color: #ffedd5;
+    -fx-background-radius: 999px;
+    -fx-padding: 4px 8px;
+}
+
+.provider-badge-local {
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #475569;
+    -fx-background-color: #e2e8f0;
+    -fx-background-radius: 999px;
+    -fx-padding: 4px 8px;
+}
+
+.market-installed-row {
+    -fx-background-color: transparent;
+    -fx-background-radius: 14px;
+}
+
+.market-installed-row:hover {
+    -fx-background-color: #f8fbff;
+}

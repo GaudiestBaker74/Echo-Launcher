@@ -10,15 +10,65 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FabricManager {
 
     private static final String META_URL = "https://meta.fabricmc.net/v2";
     private static final String USER_AGENT = "ProfessionalMinecraftLauncher/1.0";
 
-    public static void install(final VersionEntry version, final LauncherCallback callback) {
+    public static class FabricLoaderVersion {
+        public String version;
+        public boolean stable;
+
+        public FabricLoaderVersion(String version, boolean stable) {
+            this.version = version;
+            this.stable = stable;
+        }
+
+        @Override
+        public String toString() {
+            return version + (stable ? "  Stable" : "  Beta");
+        }
+    }
+
+    public static List<FabricLoaderVersion> getLoaderVersions(String minecraftVersion) throws Exception {
+        String mcVersion = extractMinecraftVersion(minecraftVersion);
+
+        String loadersUrl = META_URL + "/versions/loader/" + mcVersion;
+        String loadersJson = readUrl(loadersUrl);
+
+        JsonArray loaders = JsonParser.parseString(loadersJson).getAsJsonArray();
+
+        List<FabricLoaderVersion> result = new ArrayList<FabricLoaderVersion>();
+
+        for (int i = 0; i < loaders.size(); i++) {
+            JsonObject obj = loaders.get(i).getAsJsonObject();
+
+            if (!obj.has("loader")) {
+                continue;
+            }
+
+            JsonObject loader = obj.getAsJsonObject("loader");
+
+            String version = loader.has("version") ? loader.get("version").getAsString() : "";
+            boolean stable = loader.has("stable") && loader.get("stable").getAsBoolean();
+
+            if (!version.trim().isEmpty()) {
+                result.add(new FabricLoaderVersion(version, stable));
+            }
+        }
+
+        return result;
+    }
+
+    public static void install(final VersionEntry version,
+                               final String loaderVersion,
+                               final LauncherCallback callback) {
         if (callback == null) {
             return;
         }
@@ -32,7 +82,7 @@ public class FabricManager {
             @Override
             public void run() {
                 try {
-                    installSync(version, callback);
+                    installSync(version, loaderVersion, callback);
                 } catch (Exception e) {
                     e.printStackTrace();
                     callback.onError("Error installing Fabric: " + e.getMessage());
@@ -44,49 +94,42 @@ public class FabricManager {
         t.start();
     }
 
-    private static void installSync(VersionEntry version, LauncherCallback callback) throws Exception {
-        String mcVersion = version.id.trim();
+    public static void install(final VersionEntry version, final LauncherCallback callback) {
+        install(version, null, callback);
+    }
 
-        // Si el usuario selecciona ya una versión Fabric, intentamos extraer la versión vanilla.
-        mcVersion = extractMinecraftVersion(mcVersion);
+    private static void installSync(VersionEntry version, String selectedLoaderVersion, LauncherCallback callback) throws Exception {
+        String mcVersion = extractMinecraftVersion(version.id);
 
         callback.onStatus("Buscando Fabric Loader para Minecraft " + mcVersion + "...");
 
-        String loadersUrl = META_URL + "/versions/loader/" + mcVersion;
-        String loadersJson = readUrl(loadersUrl);
+        String loaderVersion = selectedLoaderVersion;
 
-        JsonArray loaders = JsonParser.parseString(loadersJson).getAsJsonArray();
+        if (loaderVersion == null || loaderVersion.trim().isEmpty()) {
+            List<FabricLoaderVersion> versions = getLoaderVersions(mcVersion);
 
-        if (loaders.size() == 0) {
-            callback.onError("No se encontró Fabric Loader para Minecraft " + mcVersion);
-            return;
-        }
+            if (versions.isEmpty()) {
+                callback.onError("No se encontró Fabric Loader para Minecraft " + mcVersion);
+                return;
+            }
 
-        JsonObject selectedLoader = null;
+            FabricLoaderVersion selected = null;
 
-        // Preferir loader estable.
-        for (int i = 0; i < loaders.size(); i++) {
-            JsonObject obj = loaders.get(i).getAsJsonObject();
-
-            if (obj.has("loader")) {
-                JsonObject loader = obj.getAsJsonObject("loader");
-
-                if (loader.has("stable") && loader.get("stable").getAsBoolean()) {
-                    selectedLoader = obj;
+            for (FabricLoaderVersion v : versions) {
+                if (v.stable) {
+                    selected = v;
                     break;
                 }
             }
+
+            if (selected == null) {
+                selected = versions.get(0);
+            }
+
+            loaderVersion = selected.version;
         }
 
-        // Si no hay estable, usar el primero.
-        if (selectedLoader == null) {
-            selectedLoader = loaders.get(0).getAsJsonObject();
-        }
-
-        JsonObject loaderObj = selectedLoader.getAsJsonObject("loader");
-        String loaderVersion = loaderObj.get("version").getAsString();
-
-        callback.onStatus("Fabric Loader encontrado: " + loaderVersion);
+        callback.onStatus("Instalando Fabric Loader " + loaderVersion + " para Minecraft " + mcVersion + "...");
 
         String profileUrl = META_URL + "/versions/loader/" + mcVersion + "/" + loaderVersion + "/profile/json";
         String profileJson = readUrl(profileUrl);
@@ -117,9 +160,12 @@ public class FabricManager {
             return "";
         }
 
-        // Ejemplo:
-        // fabric-loader-0.16.9-1.20.1 -> 1.20.1
-        // fabric-loader-0.15.11-1.21 -> 1.21
+        versionId = versionId.trim();
+
+        if (versionId.matches("\\d+\\.\\d+(\\.\\d+)?")) {
+            return versionId;
+        }
+
         String[] parts = versionId.split("-");
 
         for (int i = parts.length - 1; i >= 0; i--) {
@@ -137,8 +183,9 @@ public class FabricManager {
         HttpURLConnection conn = null;
 
         try {
-            URL url = new URL(urlStr);
+            URL url = URI.create(urlStr).toURL();
             conn = (HttpURLConnection) url.openConnection();
+
             conn.setRequestMethod("GET");
             conn.setRequestProperty("User-Agent", USER_AGENT);
             conn.setRequestProperty("Accept", "application/json");
@@ -173,11 +220,11 @@ public class FabricManager {
     }
 
     private static String readStream(InputStream stream) throws Exception {
-        StringBuilder sb = new StringBuilder();
-
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(stream, StandardCharsets.UTF_8)
         );
+
+        StringBuilder sb = new StringBuilder();
 
         try {
             String line;
