@@ -323,12 +323,21 @@ jobs:
           $sdk = Get-ChildItem "javafx-download\extracted" | Select-Object -First 1
 
           New-Item -ItemType Directory -Force -Path "$APPDIR\javafx\lib" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$APPDIR\javafx\bin" | Out-Null
+
           Copy-Item "$($sdk.FullName)\lib\*" "$APPDIR\javafx\lib\" -Recurse -Force
+
+          if (Test-Path "$($sdk.FullName)\bin") {
+            Copy-Item "$($sdk.FullName)\bin\*" "$APPDIR\javafx\bin\" -Recurse -Force
+          }
 
           Remove-Item "javafx-download" -Recurse -Force
 
-          Write-Host "JavaFX files:"
+          Write-Host "JavaFX lib files:"
           Get-ChildItem "$APPDIR\javafx\lib"
+
+          Write-Host "JavaFX bin files:"
+          Get-ChildItem "$APPDIR\javafx\bin"
 
       - name: Add Windows icon
         shell: pwsh
@@ -356,7 +365,8 @@ jobs:
           set JAVA=%APPDIR%runtime\bin\java.exe
           set JAR=%APPDIR%app\Minecraft_Launcher.jar
           set DEPS=%APPDIR%app\deps\*
-          set JAVAFX=%APPDIR%javafx\lib
+          set JAVAFX_LIB=%APPDIR%javafx\lib
+          set JAVAFX_BIN=%APPDIR%javafx\bin
           set LOG=%APPDIR%launcher-startup.log
 
           echo Starting Minecraft Launcher... > "%LOG%"
@@ -364,7 +374,8 @@ jobs:
           echo JAVA=%JAVA% >> "%LOG%"
           echo JAR=%JAR% >> "%LOG%"
           echo DEPS=%DEPS% >> "%LOG%"
-          echo JAVAFX=%JAVAFX% >> "%LOG%"
+          echo JAVAFX_LIB=%JAVAFX_LIB% >> "%LOG%"
+          echo JAVAFX_BIN=%JAVAFX_BIN% >> "%LOG%"
           echo. >> "%LOG%"
 
           if not exist "%JAVA%" (
@@ -381,16 +392,30 @@ jobs:
             exit /b 1
           )
 
-          if not exist "%JAVAFX%" (
-            echo JavaFX folder not found: %JAVAFX% >> "%LOG%"
-            echo JavaFX folder not found: %JAVAFX%
+          if not exist "%JAVAFX_LIB%" (
+            echo JavaFX lib folder not found: %JAVAFX_LIB% >> "%LOG%"
+            echo JavaFX lib folder not found: %JAVAFX_LIB%
             pause
             exit /b 1
           )
 
+          if not exist "%JAVAFX_BIN%" (
+            echo JavaFX bin folder not found: %JAVAFX_BIN% >> "%LOG%"
+            echo JavaFX bin folder not found: %JAVAFX_BIN%
+            pause
+            exit /b 1
+          )
+
+          set PATH=%JAVAFX_BIN%;%PATH%
+
+          echo Running command... >> "%LOG%"
+          echo "%JAVA%" --module-path "%JAVAFX_LIB%" --add-modules javafx.controls,javafx.fxml,javafx.web -Djava.library.path="%JAVAFX_BIN%" -cp "%JAR%;%DEPS%" launcher.Main >> "%LOG%"
+          echo. >> "%LOG%"
+
           "%JAVA%" ^
-            --module-path "%JAVAFX%" ^
+            --module-path "%JAVAFX_LIB%" ^
             --add-modules javafx.controls,javafx.fxml,javafx.web ^
+            -Djava.library.path="%JAVAFX_BIN%" ^
             -cp "%JAR%;%DEPS%" ^
             launcher.Main >> "%LOG%" 2>&1
 
