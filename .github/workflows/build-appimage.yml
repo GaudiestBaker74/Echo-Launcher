@@ -26,10 +26,11 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Build project with Maven
+      - name: Build project
         run: |
           if [ -f "pom.xml" ]; then
             mvn clean package -DskipTests
+            mvn dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/dependency
           elif [ -f "gradlew" ]; then
             chmod +x gradlew
             ./gradlew build
@@ -42,13 +43,14 @@ jobs:
         id: locate_jar
         run: |
           JAR_FILE=$(find . -type f -name "*.jar" \
+            ! -path "./target/dependency/*" \
             ! -name "*sources*" \
             ! -name "*javadoc*" \
             ! -name "*original*" \
             | head -n 1)
 
           if [ -z "$JAR_FILE" ]; then
-            echo "No jar found."
+            echo "No launcher jar found."
             exit 1
           fi
 
@@ -63,10 +65,22 @@ jobs:
 
           mkdir -p "$APPDIR/usr/bin"
           mkdir -p "$APPDIR/usr/lib"
+          mkdir -p "$APPDIR/usr/lib/deps"
           mkdir -p "$APPDIR/usr/share/applications"
           mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
 
           cp "${{ steps.locate_jar.outputs.jar_file }}" "$APPDIR/usr/lib/Minecraft_Launcher.jar"
+
+          if [ -d "target/dependency" ]; then
+            cp target/dependency/*.jar "$APPDIR/usr/lib/deps/" || true
+          fi
+
+          if [ -d "build/libs" ]; then
+            find build/libs -type f -name "*.jar" \
+              ! -name "*sources*" \
+              ! -name "*javadoc*" \
+              -exec cp {} "$APPDIR/usr/lib/deps/" \; || true
+          fi
 
       - name: Download Linux Java Runtime
         run: |
@@ -114,9 +128,10 @@ jobs:
             cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/minecraft-launcher.png"
             cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
           else
-            echo "No icon found. Creating placeholder icon."
-            convert -size 256x256 xc:#2563eb "$APPDIR/minecraft-launcher.png" || true
-            cp "$APPDIR/minecraft-launcher.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png" || true
+            echo "No icon found. Creating simple placeholder icon."
+            sudo apt install -y imagemagick
+            convert -size 256x256 xc:#2563eb "$APPDIR/minecraft-launcher.png"
+            cp "$APPDIR/minecraft-launcher.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
           fi
 
       - name: Create launcher script
@@ -130,12 +145,14 @@ jobs:
 
           JAVA="$APPDIR/usr/lib/runtime/bin/java"
           JAR="$APPDIR/usr/lib/Minecraft_Launcher.jar"
+          DEPS="$APPDIR/usr/lib/deps/*"
           JAVAFX="$APPDIR/usr/lib/javafx/lib"
 
           exec "$JAVA" \
             --module-path "$JAVAFX" \
             --add-modules javafx.controls,javafx.fxml,javafx.web \
-            -jar "$JAR" "$@"
+            -cp "$JAR:$DEPS" \
+            launcher.Main "$@"
           EOF
 
           chmod +x "$APPDIR/usr/bin/minecraft-launcher"
