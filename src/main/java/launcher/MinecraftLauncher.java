@@ -78,6 +78,10 @@ public class MinecraftLauncher {
         cmd.add("-Dorg.fusesource.jansi.Ansi.disable=true");
         cmd.add("-Dlog4j.skipJansi=true");
 
+        if (PlatformManager.isMac()) {
+            cmd.add("-XstartOnFirstThread");
+        }
+
         /*
          * Natives globales.
          */

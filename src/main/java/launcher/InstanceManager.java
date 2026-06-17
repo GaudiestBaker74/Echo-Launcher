@@ -20,7 +20,7 @@ public class InstanceManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static File getBaseDir() {
-        File dir = new File(System.getProperty("user.home"), ".minecraft-launcher/instances");
+        File dir = new File(PlatformManager.getLauncherDataDir(), "instances");
 
         if (!dir.exists()) {
             dir.mkdirs();

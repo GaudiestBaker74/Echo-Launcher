@@ -8,7 +8,7 @@ import java.util.*;
 
 public class VersionManager {
 
-    public static final File MC_DIR = new File(System.getenv("APPDATA"), ".minecraft");
+    public static final File MC_DIR = PlatformManager.getDefaultMinecraftDir();
     private static final Set<String> prepared = new HashSet<String>();
 
     /* ================== VERSIONES ================== */
@@ -195,9 +195,10 @@ public class VersionManager {
                     if (downloads.has("classifiers")) {
                         JsonObject classifiers = downloads.getAsJsonObject("classifiers");
                         String nativeKey = null;
-                        if (lib.has("natives") && lib.getAsJsonObject("natives").has("windows")) {
-                            nativeKey = lib.getAsJsonObject("natives").get("windows").getAsString().replace("${arch}",
-                                    "64");
+                        String osName = PlatformManager.getNativeClassifierOSName();
+
+                        if (lib.has("natives") && lib.getAsJsonObject("natives").has(osName)) {
+                            nativeKey = lib.getAsJsonObject("natives").get(osName).getAsString().replace("${arch}", "64");
                         }
                         if (nativeKey != null && classifiers.has(nativeKey)) {
                             JsonObject artifact = classifiers.getAsJsonObject(nativeKey);

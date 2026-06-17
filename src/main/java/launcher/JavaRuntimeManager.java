@@ -39,7 +39,7 @@ public class JavaRuntimeManager {
     }
 
     private static File getRuntimeDir(int majorVersion) {
-        File baseDir = new File(System.getProperty("user.home"), ".minecraft-launcher/runtimes");
+        File baseDir = new File(PlatformManager.getLauncherDataDir(), "runtimes");
         return new File(baseDir, "java-" + majorVersion);
     }
 
@@ -69,8 +69,8 @@ public class JavaRuntimeManager {
     }
 
     private static String buildAdoptiumUrl(int majorVersion, String imageType) {
-        String os = getAdoptiumOs();
-        String arch = getAdoptiumArch();
+        String os = PlatformManager.getAdoptiumOSName();
+        String arch = PlatformManager.getAdoptiumArch();
 
         return "https://api.adoptium.net/v3/binary/latest/"
                 + majorVersion
@@ -256,7 +256,7 @@ public class JavaRuntimeManager {
             return null;
         }
 
-        String javaName = isWindows() ? "java.exe" : "java";
+        String javaName = PlatformManager.getJavaExecutableName();
 
         File direct = new File(dir, "bin/" + javaName);
 

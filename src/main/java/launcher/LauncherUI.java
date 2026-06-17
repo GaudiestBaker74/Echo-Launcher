@@ -5187,6 +5187,97 @@ public class LauncherUI extends Application {
 
         javaCard.getChildren().addAll(javaTitle, javaInfo, openRuntimesBtn);
 
+        /*
+         * SYSTEM
+         */
+        VBox systemCard = new VBox(12);
+        systemCard.getStyleClass().add("namemc-card");
+
+        Label systemTitle = new Label("Sistema");
+        systemTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #111827;");
+
+        Label osLabel = new Label("Sistema operativo: " + PlatformManager.getOS());
+        osLabel.setWrapText(true);
+        osLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #374151;");
+
+        Label archLabel = new Label("Arquitectura: " + PlatformManager.getAdoptiumArch());
+        archLabel.setWrapText(true);
+        archLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #374151;");
+
+        Label mcDirLabel = new Label("Minecraft: " + VersionManager.MC_DIR.getAbsolutePath());
+        mcDirLabel.setWrapText(true);
+        mcDirLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
+
+        Label launcherDirLabel = new Label("Launcher: " + getLauncherDataDir().getAbsolutePath());
+        launcherDirLabel.setWrapText(true);
+        launcherDirLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
+
+        Label instancesDirLabel = new Label("Instancias: " + InstanceManager.getBaseDir().getAbsolutePath());
+        instancesDirLabel.setWrapText(true);
+        instancesDirLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
+
+        Label runtimesDirLabel = new Label("Runtimes Java: " + new File(getLauncherDataDir(), "runtimes").getAbsolutePath());
+        runtimesDirLabel.setWrapText(true);
+        runtimesDirLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
+
+        HBox systemButtonsRow1 = new HBox(10);
+        HBox systemButtonsRow2 = new HBox(10);
+
+        Button openMcDirBtn = new Button("Abrir Minecraft");
+        openMcDirBtn.getStyleClass().add("secondary-button");
+
+        Button openLauncherDirBtn = new Button("Abrir launcher");
+        openLauncherDirBtn.getStyleClass().add("secondary-button");
+
+        Button openInstancesDirBtn = new Button("Abrir instancias");
+        openInstancesDirBtn.getStyleClass().add("secondary-button");
+
+        Button openRuntimesDirBtn = new Button("Abrir runtimes");
+        openRuntimesDirBtn.getStyleClass().add("secondary-button");
+
+        systemButtonsRow1.getChildren().addAll(openMcDirBtn, openLauncherDirBtn);
+        systemButtonsRow2.getChildren().addAll(openInstancesDirBtn, openRuntimesDirBtn);
+
+        openMcDirBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                openFolder(VersionManager.MC_DIR);
+            }
+        });
+
+        openLauncherDirBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                openFolder(getLauncherDataDir());
+            }
+        });
+
+        openInstancesDirBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                openFolder(InstanceManager.getBaseDir());
+            }
+        });
+
+        openRuntimesDirBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                openFolder(new File(getLauncherDataDir(), "runtimes"));
+            }
+        });
+
+        systemCard.getChildren().addAll(
+                systemTitle,
+                osLabel,
+                archLabel,
+                mcDirLabel,
+                launcherDirLabel,
+                instancesDirLabel,
+                runtimesDirLabel,
+                systemButtonsRow1,
+                systemButtonsRow2
+        );
+
         HBox footer = new HBox(10);
         footer.setAlignment(Pos.CENTER_RIGHT);
 
@@ -5208,6 +5299,7 @@ public class LauncherUI extends Application {
                 foldersCard,
                 cacheCard,
                 javaCard,
+                systemCard,
                 footer
         );
 
@@ -5230,7 +5322,7 @@ public class LauncherUI extends Application {
     }
 
     private File getLauncherDataDir() {
-        File dir = new File(System.getProperty("user.home"), ".minecraft-launcher");
+        File dir = PlatformManager.getLauncherDataDir();
 
         if (!dir.exists()) {
             dir.mkdirs();
@@ -5241,17 +5333,7 @@ public class LauncherUI extends Application {
 
     private void openFolder(File folder) {
         try {
-            if (folder == null) {
-                return;
-            }
-
-            if (!folder.exists()) {
-                folder.mkdirs();
-            }
-
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().open(folder);
-            }
+            PlatformManager.openFolder(folder);
         } catch (Exception ex) {
             statusLabel.setText("No se pudo abrir carpeta: " + ex.getMessage());
         }
@@ -6531,7 +6613,7 @@ public class LauncherUI extends Application {
     }
 
     private File getIconCacheDirectory() {
-        File dir = new File(System.getProperty("user.home"), ".minecraft-launcher/icon-cache");
+        File dir = new File(PlatformManager.getLauncherDataDir(), "icon-cache");
 
         if (!dir.exists()) {
             dir.mkdirs();
@@ -7965,7 +8047,7 @@ public class LauncherUI extends Application {
             public void handle(ActionEvent event) {
                 try {
                     if (Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().open(folder);
+                        PlatformManager.openFolder(folder);
                     }
                 } catch (Exception ex) {
                 }

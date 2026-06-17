@@ -1,0 +1,191 @@
+name: Build Linux AppImage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-appimage:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y wget curl unzip tar file desktop-file-utils libfuse2
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build project with Maven
+        run: |
+          if [ -f "pom.xml" ]; then
+            mvn clean package -DskipTests
+          elif [ -f "gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew build
+          else
+            echo "No pom.xml or gradlew found."
+            exit 1
+          fi
+
+      - name: Locate launcher jar
+        id: locate_jar
+        run: |
+          JAR_FILE=$(find . -type f -name "*.jar" \
+            ! -name "*sources*" \
+            ! -name "*javadoc*" \
+            ! -name "*original*" \
+            | head -n 1)
+
+          if [ -z "$JAR_FILE" ]; then
+            echo "No jar found."
+            exit 1
+          fi
+
+          echo "Found jar: $JAR_FILE"
+          echo "jar_file=$JAR_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare AppDir
+        run: |
+          APPDIR="MinecraftLauncher.AppDir"
+
+          rm -rf "$APPDIR"
+
+          mkdir -p "$APPDIR/usr/bin"
+          mkdir -p "$APPDIR/usr/lib"
+          mkdir -p "$APPDIR/usr/share/applications"
+          mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+
+          cp "${{ steps.locate_jar.outputs.jar_file }}" "$APPDIR/usr/lib/Minecraft_Launcher.jar"
+
+      - name: Download Linux Java Runtime
+        run: |
+          APPDIR="MinecraftLauncher.AppDir"
+
+          mkdir -p runtime-download
+
+          wget -O runtime-download/runtime.tar.gz \
+            "https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jre/hotspot/normal/eclipse"
+
+          mkdir -p "$APPDIR/usr/lib/runtime-tmp"
+          tar -xf runtime-download/runtime.tar.gz -C "$APPDIR/usr/lib/runtime-tmp"
+
+          mv "$APPDIR/usr/lib/runtime-tmp"/* "$APPDIR/usr/lib/runtime"
+
+          rm -rf "$APPDIR/usr/lib/runtime-tmp"
+          rm -rf runtime-download
+
+          "$APPDIR/usr/lib/runtime/bin/java" -version
+
+      - name: Download JavaFX SDK
+        run: |
+          APPDIR="MinecraftLauncher.AppDir"
+
+          mkdir -p javafx-download
+
+          wget -O javafx-download/javafx.zip \
+            "https://download2.gluonhq.com/openjfx/21.0.2/openjfx-21.0.2_linux-x64_bin-sdk.zip"
+
+          unzip javafx-download/javafx.zip -d javafx-download
+
+          mkdir -p "$APPDIR/usr/lib/javafx"
+          cp -r javafx-download/javafx-sdk-21.0.2/lib "$APPDIR/usr/lib/javafx/"
+
+          rm -rf javafx-download
+
+      - name: Add icon
+        run: |
+          APPDIR="MinecraftLauncher.AppDir"
+
+          if [ -f "minecraft-launcher.png" ]; then
+            cp minecraft-launcher.png "$APPDIR/minecraft-launcher.png"
+            cp minecraft-launcher.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
+          elif [ -f "src/main/resources/icons/minecraft-launcher.png" ]; then
+            cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/minecraft-launcher.png"
+            cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
+          else
+            echo "No icon found. Creating placeholder icon."
+            convert -size 256x256 xc:#2563eb "$APPDIR/minecraft-launcher.png" || true
+            cp "$APPDIR/minecraft-launcher.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png" || true
+          fi
+
+      - name: Create launcher script
+        run: |
+          APPDIR="MinecraftLauncher.AppDir"
+
+          cat > "$APPDIR/usr/bin/minecraft-launcher" << 'EOF'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "$0")")"
+          APPDIR="$(dirname "$(dirname "$HERE")")"
+
+          JAVA="$APPDIR/usr/lib/runtime/bin/java"
+          JAR="$APPDIR/usr/lib/Minecraft_Launcher.jar"
+          JAVAFX="$APPDIR/usr/lib/javafx/lib"
+
+          exec "$JAVA" \
+            --module-path "$JAVAFX" \
+            --add-modules javafx.controls,javafx.fxml,javafx.web \
+            -jar "$JAR" "$@"
+          EOF
+
+          chmod +x "$APPDIR/usr/bin/minecraft-launcher"
+
+      - name: Create AppRun
+        run: |
+          APPDIR="MinecraftLauncher.AppDir"
+
+          cat > "$APPDIR/AppRun" << 'EOF'
+          #!/bin/bash
+          APPDIR="$(dirname "$(readlink -f "$0")")"
+          exec "$APPDIR/usr/bin/minecraft-launcher" "$@"
+          EOF
+
+          chmod +x "$APPDIR/AppRun"
+
+      - name: Create desktop file
+        run: |
+          APPDIR="MinecraftLauncher.AppDir"
+
+          cat > "$APPDIR/minecraft-launcher.desktop" << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Minecraft Launcher
+          Exec=minecraft-launcher
+          Icon=minecraft-launcher
+          Categories=Game;
+          Terminal=false
+          EOF
+
+          cp "$APPDIR/minecraft-launcher.desktop" "$APPDIR/usr/share/applications/minecraft-launcher.desktop"
+
+      - name: Download appimagetool
+        run: |
+          wget -O appimagetool-x86_64.AppImage \
+            "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+
+          chmod +x appimagetool-x86_64.AppImage
+
+      - name: Build AppImage
+        run: |
+          export ARCH=x86_64
+          export APPIMAGE_EXTRACT_AND_RUN=1
+
+          ./appimagetool-x86_64.AppImage MinecraftLauncher.AppDir Minecraft_Launcher-x86_64.AppImage
+
+          chmod +x Minecraft_Launcher-x86_64.AppImage
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Minecraft_Launcher_AppImage
+          path: Minecraft_Launcher-x86_64.AppImage
