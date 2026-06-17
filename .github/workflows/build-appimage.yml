@@ -2,10 +2,6 @@ name: Build Multiplatform Packages
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
 
 jobs:
   build-linux-appimage:
@@ -326,9 +322,13 @@ jobs:
 
           $sdk = Get-ChildItem "javafx-download\extracted" | Select-Object -First 1
 
-          Copy-Item "$($sdk.FullName)\lib" "$APPDIR\javafx\lib" -Recurse -Force
+          New-Item -ItemType Directory -Force -Path "$APPDIR\javafx\lib" | Out-Null
+          Copy-Item "$($sdk.FullName)\lib\*" "$APPDIR\javafx\lib\" -Recurse -Force
 
           Remove-Item "javafx-download" -Recurse -Force
+
+          Write-Host "JavaFX files:"
+          Get-ChildItem "$APPDIR\javafx\lib"
 
       - name: Add Windows icon
         shell: pwsh
@@ -350,17 +350,61 @@ jobs:
           @echo off
           setlocal
 
+          cd /d "%~dp0"
+
           set APPDIR=%~dp0
           set JAVA=%APPDIR%runtime\bin\java.exe
           set JAR=%APPDIR%app\Minecraft_Launcher.jar
           set DEPS=%APPDIR%app\deps\*
           set JAVAFX=%APPDIR%javafx\lib
+          set LOG=%APPDIR%launcher-startup.log
+
+          echo Starting Minecraft Launcher... > "%LOG%"
+          echo APPDIR=%APPDIR% >> "%LOG%"
+          echo JAVA=%JAVA% >> "%LOG%"
+          echo JAR=%JAR% >> "%LOG%"
+          echo DEPS=%DEPS% >> "%LOG%"
+          echo JAVAFX=%JAVAFX% >> "%LOG%"
+          echo. >> "%LOG%"
+
+          if not exist "%JAVA%" (
+            echo Java runtime not found: %JAVA% >> "%LOG%"
+            echo Java runtime not found: %JAVA%
+            pause
+            exit /b 1
+          )
+
+          if not exist "%JAR%" (
+            echo Launcher jar not found: %JAR% >> "%LOG%"
+            echo Launcher jar not found: %JAR%
+            pause
+            exit /b 1
+          )
+
+          if not exist "%JAVAFX%" (
+            echo JavaFX folder not found: %JAVAFX% >> "%LOG%"
+            echo JavaFX folder not found: %JAVAFX%
+            pause
+            exit /b 1
+          )
 
           "%JAVA%" ^
             --module-path "%JAVAFX%" ^
             --add-modules javafx.controls,javafx.fxml,javafx.web ^
             -cp "%JAR%;%DEPS%" ^
-            launcher.Main %*
+            launcher.Main >> "%LOG%" 2>&1
+
+          set EXITCODE=%ERRORLEVEL%
+
+          echo. >> "%LOG%"
+          echo Exit code: %EXITCODE% >> "%LOG%"
+
+          if not "%EXITCODE%"=="0" (
+            echo.
+            echo Launcher failed. Check launcher-startup.log
+            type "%LOG%"
+            pause
+          )
 
           endlocal
           '@ | Out-File -FilePath "$APPDIR\MinecraftLauncher.bat" -Encoding ASCII
@@ -370,6 +414,17 @@ jobs:
         run: |
           Compress-Archive -Path "MinecraftLauncher-Windows" -DestinationPath "Minecraft_Launcher-windows-x64.zip" -Force
 
+      - name: Create Windows silent launcher
+        shell: pwsh
+        run: |
+          $APPDIR = "MinecraftLauncher-Windows"
+
+          @'
+          Set WshShell = CreateObject("WScript.Shell")
+          WshShell.Run chr(34) & CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName) & "\MinecraftLauncher.bat" & chr(34), 0
+          Set WshShell = Nothing
+          '@ | Out-File -FilePath "$APPDIR\MinecraftLauncher.vbs" -Encoding ASCII
+
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
@@ -378,7 +433,7 @@ jobs:
 
   build-macos-app:
     name: Build macOS App ZIP
-    runs-on: macos-13
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
