@@ -1,4 +1,4 @@
-name: Build Linux AppImage
+name: Build Multiplatform Packages
 
 on:
   workflow_dispatch:
@@ -8,7 +8,8 @@ on:
       - master
 
 jobs:
-  build-appimage:
+  build-linux-appimage:
+    name: Build Linux AppImage
     runs-on: ubuntu-22.04
 
     steps:
@@ -18,7 +19,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt update
-          sudo apt install -y wget curl unzip tar file desktop-file-utils libfuse2
+          sudo apt install -y wget curl unzip tar file desktop-file-utils libfuse2 imagemagick
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -101,7 +102,7 @@ jobs:
 
           "$APPDIR/usr/lib/runtime/bin/java" -version
 
-      - name: Download JavaFX SDK
+      - name: Download Linux JavaFX SDK
         run: |
           APPDIR="MinecraftLauncher.AppDir"
 
@@ -117,7 +118,7 @@ jobs:
 
           rm -rf javafx-download
 
-      - name: Add icon
+      - name: Add Linux icon
         run: |
           APPDIR="MinecraftLauncher.AppDir"
 
@@ -128,13 +129,12 @@ jobs:
             cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/minecraft-launcher.png"
             cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
           else
-            echo "No icon found. Creating simple placeholder icon."
-            sudo apt install -y imagemagick
+            echo "No icon found. Creating placeholder icon."
             convert -size 256x256 xc:#2563eb "$APPDIR/minecraft-launcher.png"
             cp "$APPDIR/minecraft-launcher.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
           fi
 
-      - name: Create launcher script
+      - name: Create Linux launcher script
         run: |
           APPDIR="MinecraftLauncher.AppDir"
 
@@ -157,7 +157,7 @@ jobs:
 
           chmod +x "$APPDIR/usr/bin/minecraft-launcher"
 
-      - name: Create AppRun
+      - name: Create Linux AppRun
         run: |
           APPDIR="MinecraftLauncher.AppDir"
 
@@ -169,7 +169,7 @@ jobs:
 
           chmod +x "$APPDIR/AppRun"
 
-      - name: Create desktop file
+      - name: Create Linux desktop file
         run: |
           APPDIR="MinecraftLauncher.AppDir"
 
@@ -192,17 +192,385 @@ jobs:
 
           chmod +x appimagetool-x86_64.AppImage
 
-      - name: Build AppImage
+      - name: Build Linux AppImage
         run: |
           export ARCH=x86_64
           export APPIMAGE_EXTRACT_AND_RUN=1
 
-          ./appimagetool-x86_64.AppImage MinecraftLauncher.AppDir Minecraft_Launcher-x86_64.AppImage
+          ./appimagetool-x86_64.AppImage MinecraftLauncher.AppDir Minecraft_Launcher-linux-x86_64.AppImage
 
-          chmod +x Minecraft_Launcher-x86_64.AppImage
+          chmod +x Minecraft_Launcher-linux-x86_64.AppImage
 
-      - name: Upload AppImage artifact
+      - name: Upload Linux AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Minecraft_Launcher_AppImage
-          path: Minecraft_Launcher-x86_64.AppImage
+          name: Minecraft_Launcher_Linux_AppImage
+          path: Minecraft_Launcher-linux-x86_64.AppImage
+
+  build-windows-portable:
+    name: Build Windows Portable ZIP
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build project
+        shell: pwsh
+        run: |
+          if (Test-Path "pom.xml") {
+            mvn clean package -DskipTests
+            mvn dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/dependency
+          } elseif (Test-Path "gradlew.bat") {
+            .\gradlew.bat build
+          } elseif (Test-Path "gradlew") {
+            ./gradlew build
+          } else {
+            Write-Error "No pom.xml or gradlew found."
+            exit 1
+          }
+
+      - name: Locate launcher jar
+        id: locate_jar
+        shell: pwsh
+        run: |
+          $jars = Get-ChildItem -Recurse -Filter "*.jar" |
+            Where-Object {
+              $_.FullName -notmatch "\\target\\dependency\\" -and
+              $_.Name -notmatch "sources" -and
+              $_.Name -notmatch "javadoc" -and
+              $_.Name -notmatch "original"
+            }
+
+          if ($jars.Count -eq 0) {
+            Write-Error "No launcher jar found."
+            exit 1
+          }
+
+          $jar = $jars[0].FullName
+          Write-Host "Found jar: $jar"
+          "jar_file=$jar" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Prepare Windows portable directory
+        shell: pwsh
+        run: |
+          $APPDIR = "MinecraftLauncher-Windows"
+
+          if (Test-Path $APPDIR) {
+            Remove-Item $APPDIR -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Force -Path "$APPDIR\app" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$APPDIR\app\deps" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$APPDIR\runtime" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$APPDIR\javafx" | Out-Null
+
+          Copy-Item "${{ steps.locate_jar.outputs.jar_file }}" "$APPDIR\app\Minecraft_Launcher.jar"
+
+          if (Test-Path "target\dependency") {
+            Copy-Item "target\dependency\*.jar" "$APPDIR\app\deps\" -ErrorAction SilentlyContinue
+          }
+
+          if (Test-Path "build\libs") {
+            Get-ChildItem "build\libs" -Filter "*.jar" |
+              Where-Object {
+                $_.Name -notmatch "sources" -and
+                $_.Name -notmatch "javadoc"
+              } |
+              ForEach-Object {
+                Copy-Item $_.FullName "$APPDIR\app\deps\" -ErrorAction SilentlyContinue
+              }
+          }
+
+      - name: Download Windows Java Runtime
+        shell: pwsh
+        run: |
+          $APPDIR = "MinecraftLauncher-Windows"
+
+          New-Item -ItemType Directory -Force -Path "runtime-download" | Out-Null
+
+          $runtimeZip = "runtime-download\runtime.zip"
+          Invoke-WebRequest `
+            -Uri "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jre/hotspot/normal/eclipse" `
+            -OutFile $runtimeZip
+
+          Expand-Archive -Path $runtimeZip -DestinationPath "runtime-download\extracted" -Force
+
+          $root = Get-ChildItem "runtime-download\extracted" | Select-Object -First 1
+
+          Copy-Item "$($root.FullName)\*" "$APPDIR\runtime\" -Recurse -Force
+
+          Remove-Item "runtime-download" -Recurse -Force
+
+          & "$APPDIR\runtime\bin\java.exe" -version
+
+      - name: Download Windows JavaFX SDK
+        shell: pwsh
+        run: |
+          $APPDIR = "MinecraftLauncher-Windows"
+
+          New-Item -ItemType Directory -Force -Path "javafx-download" | Out-Null
+
+          $javafxZip = "javafx-download\javafx.zip"
+          Invoke-WebRequest `
+            -Uri "https://download2.gluonhq.com/openjfx/21.0.2/openjfx-21.0.2_windows-x64_bin-sdk.zip" `
+            -OutFile $javafxZip
+
+          Expand-Archive -Path $javafxZip -DestinationPath "javafx-download\extracted" -Force
+
+          $sdk = Get-ChildItem "javafx-download\extracted" | Select-Object -First 1
+
+          Copy-Item "$($sdk.FullName)\lib" "$APPDIR\javafx\lib" -Recurse -Force
+
+          Remove-Item "javafx-download" -Recurse -Force
+
+      - name: Add Windows icon
+        shell: pwsh
+        run: |
+          $APPDIR = "MinecraftLauncher-Windows"
+
+          if (Test-Path "minecraft-launcher.png") {
+            Copy-Item "minecraft-launcher.png" "$APPDIR\minecraft-launcher.png"
+          } elseif (Test-Path "src\main\resources\icons\minecraft-launcher.png") {
+            Copy-Item "src\main\resources\icons\minecraft-launcher.png" "$APPDIR\minecraft-launcher.png"
+          }
+
+      - name: Create Windows launcher BAT
+        shell: pwsh
+        run: |
+          $APPDIR = "MinecraftLauncher-Windows"
+
+          @'
+          @echo off
+          setlocal
+
+          set APPDIR=%~dp0
+          set JAVA=%APPDIR%runtime\bin\java.exe
+          set JAR=%APPDIR%app\Minecraft_Launcher.jar
+          set DEPS=%APPDIR%app\deps\*
+          set JAVAFX=%APPDIR%javafx\lib
+
+          "%JAVA%" ^
+            --module-path "%JAVAFX%" ^
+            --add-modules javafx.controls,javafx.fxml,javafx.web ^
+            -cp "%JAR%;%DEPS%" ^
+            launcher.Main %*
+
+          endlocal
+          '@ | Out-File -FilePath "$APPDIR\MinecraftLauncher.bat" -Encoding ASCII
+
+      - name: Zip Windows portable package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "MinecraftLauncher-Windows" -DestinationPath "Minecraft_Launcher-windows-x64.zip" -Force
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Minecraft_Launcher_Windows_Portable
+          path: Minecraft_Launcher-windows-x64.zip
+
+  build-macos-app:
+    name: Build macOS App ZIP
+    runs-on: macos-13
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build project
+        run: |
+          if [ -f "pom.xml" ]; then
+            mvn clean package -DskipTests
+            mvn dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/dependency
+          elif [ -f "gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew build
+          else
+            echo "No pom.xml or gradlew found."
+            exit 1
+          fi
+
+      - name: Locate launcher jar
+        id: locate_jar
+        run: |
+          JAR_FILE=$(find . -type f -name "*.jar" \
+            ! -path "./target/dependency/*" \
+            ! -name "*sources*" \
+            ! -name "*javadoc*" \
+            ! -name "*original*" \
+            | head -n 1)
+
+          if [ -z "$JAR_FILE" ]; then
+            echo "No launcher jar found."
+            exit 1
+          fi
+
+          echo "Found jar: $JAR_FILE"
+          echo "jar_file=$JAR_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare macOS .app structure
+        run: |
+          APP="Minecraft Launcher.app"
+
+          rm -rf "$APP"
+
+          mkdir -p "$APP/Contents/MacOS"
+          mkdir -p "$APP/Contents/Resources/app"
+          mkdir -p "$APP/Contents/Resources/app/deps"
+          mkdir -p "$APP/Contents/Resources/runtime"
+          mkdir -p "$APP/Contents/Resources/javafx"
+
+          cp "${{ steps.locate_jar.outputs.jar_file }}" "$APP/Contents/Resources/app/Minecraft_Launcher.jar"
+
+          if [ -d "target/dependency" ]; then
+            cp target/dependency/*.jar "$APP/Contents/Resources/app/deps/" || true
+          fi
+
+          if [ -d "build/libs" ]; then
+            find build/libs -type f -name "*.jar" \
+              ! -name "*sources*" \
+              ! -name "*javadoc*" \
+              -exec cp {} "$APP/Contents/Resources/app/deps/" \; || true
+          fi
+
+      - name: Download macOS Java Runtime
+        run: |
+          APP="Minecraft Launcher.app"
+
+          mkdir -p runtime-download
+
+          wget -O runtime-download/runtime.tar.gz \
+            "https://api.adoptium.net/v3/binary/latest/21/ga/mac/x64/jre/hotspot/normal/eclipse"
+
+          mkdir -p runtime-download/extracted
+          tar -xf runtime-download/runtime.tar.gz -C runtime-download/extracted
+
+          ROOT=$(find runtime-download/extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
+
+          cp -R "$ROOT/"* "$APP/Contents/Resources/runtime/"
+
+          rm -rf runtime-download
+
+          if [ -x "$APP/Contents/Resources/runtime/Contents/Home/bin/java" ]; then
+            "$APP/Contents/Resources/runtime/Contents/Home/bin/java" -version
+          else
+            "$APP/Contents/Resources/runtime/bin/java" -version
+          fi
+
+      - name: Download macOS JavaFX SDK
+        run: |
+          APP="Minecraft Launcher.app"
+
+          mkdir -p javafx-download
+
+          wget -O javafx-download/javafx.zip \
+            "https://download2.gluonhq.com/openjfx/21.0.2/openjfx-21.0.2_osx-x64_bin-sdk.zip"
+
+          unzip javafx-download/javafx.zip -d javafx-download
+
+          cp -R javafx-download/javafx-sdk-21.0.2/lib "$APP/Contents/Resources/javafx/lib"
+
+          rm -rf javafx-download
+
+      - name: Add macOS icon resources
+        run: |
+          APP="Minecraft Launcher.app"
+
+          if [ -f "minecraft-launcher.png" ]; then
+            cp minecraft-launcher.png "$APP/Contents/Resources/minecraft-launcher.png"
+          elif [ -f "src/main/resources/icons/minecraft-launcher.png" ]; then
+            cp src/main/resources/icons/minecraft-launcher.png "$APP/Contents/Resources/minecraft-launcher.png"
+          fi
+
+      - name: Create macOS launcher executable
+        run: |
+          APP="Minecraft Launcher.app"
+
+          cat > "$APP/Contents/MacOS/MinecraftLauncher" << 'EOF'
+          #!/bin/bash
+
+          APPDIR="$(cd "$(dirname "$0")/.." && pwd)"
+          RES="$APPDIR/Resources"
+
+          if [ -x "$RES/runtime/Contents/Home/bin/java" ]; then
+            JAVA="$RES/runtime/Contents/Home/bin/java"
+          else
+            JAVA="$RES/runtime/bin/java"
+          fi
+
+          JAR="$RES/app/Minecraft_Launcher.jar"
+          DEPS="$RES/app/deps/*"
+          JAVAFX="$RES/javafx/lib"
+
+          exec "$JAVA" \
+            -XstartOnFirstThread \
+            --module-path "$JAVAFX" \
+            --add-modules javafx.controls,javafx.fxml,javafx.web \
+            -cp "$JAR:$DEPS" \
+            launcher.Main "$@"
+          EOF
+
+          chmod +x "$APP/Contents/MacOS/MinecraftLauncher"
+
+      - name: Create macOS Info.plist
+        run: |
+          APP="Minecraft Launcher.app"
+
+          cat > "$APP/Contents/Info.plist" << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleName</key>
+              <string>Minecraft Launcher</string>
+
+              <key>CFBundleDisplayName</key>
+              <string>Minecraft Launcher</string>
+
+              <key>CFBundleIdentifier</key>
+              <string>com.example.minecraftlauncher</string>
+
+              <key>CFBundleVersion</key>
+              <string>1.0.0</string>
+
+              <key>CFBundleShortVersionString</key>
+              <string>1.0.0</string>
+
+              <key>CFBundleExecutable</key>
+              <string>MinecraftLauncher</string>
+
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+
+              <key>LSMinimumSystemVersion</key>
+              <string>10.13</string>
+
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Zip macOS app
+        run: |
+          zip -r "Minecraft_Launcher-macos-x64.zip" "Minecraft Launcher.app"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Minecraft_Launcher_macOS_App
+          path: Minecraft_Launcher-macos-x64.zip
