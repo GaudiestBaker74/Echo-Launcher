@@ -2,6 +2,22 @@ name: Build Multiplatform Packages
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version/tag, e.g. v1.0.0"
+        required: true
+        default: "v1.0.0"
+      prerelease:
+        description: "Mark this release as pre-release"
+        required: true
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build-linux-appimage:
@@ -56,7 +72,7 @@ jobs:
 
       - name: Prepare AppDir
         run: |
-          APPDIR="MinecraftLauncher.AppDir"
+          APPDIR="EchoLauncher.AppDir"
 
           rm -rf "$APPDIR"
 
@@ -66,7 +82,7 @@ jobs:
           mkdir -p "$APPDIR/usr/share/applications"
           mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
 
-          cp "${{ steps.locate_jar.outputs.jar_file }}" "$APPDIR/usr/lib/Minecraft_Launcher.jar"
+          cp "${{ steps.locate_jar.outputs.jar_file }}" "$APPDIR/usr/lib/Echo_Launcher.jar"
 
           if [ -d "target/dependency" ]; then
             cp target/dependency/*.jar "$APPDIR/usr/lib/deps/" || true
@@ -81,16 +97,14 @@ jobs:
 
       - name: Download Linux Java Runtime
         run: |
-          APPDIR="MinecraftLauncher.AppDir"
+          APPDIR="EchoLauncher.AppDir"
 
           mkdir -p runtime-download
-
           wget -O runtime-download/runtime.tar.gz \
             "https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jre/hotspot/normal/eclipse"
 
           mkdir -p "$APPDIR/usr/lib/runtime-tmp"
           tar -xf runtime-download/runtime.tar.gz -C "$APPDIR/usr/lib/runtime-tmp"
-
           mv "$APPDIR/usr/lib/runtime-tmp"/* "$APPDIR/usr/lib/runtime"
 
           rm -rf "$APPDIR/usr/lib/runtime-tmp"
@@ -100,108 +114,102 @@ jobs:
 
       - name: Download Linux JavaFX SDK
         run: |
-          APPDIR="MinecraftLauncher.AppDir"
+          APPDIR="EchoLauncher.AppDir"
 
           mkdir -p javafx-download
-
           wget -O javafx-download/javafx.zip \
             "https://download2.gluonhq.com/openjfx/21.0.2/openjfx-21.0.2_linux-x64_bin-sdk.zip"
 
           unzip javafx-download/javafx.zip -d javafx-download
-
           mkdir -p "$APPDIR/usr/lib/javafx"
           cp -r javafx-download/javafx-sdk-21.0.2/lib "$APPDIR/usr/lib/javafx/"
-
           rm -rf javafx-download
 
       - name: Add Linux icon
         run: |
-          APPDIR="MinecraftLauncher.AppDir"
+          APPDIR="EchoLauncher.AppDir"
 
-          if [ -f "minecraft-launcher.png" ]; then
-            cp minecraft-launcher.png "$APPDIR/minecraft-launcher.png"
-            cp minecraft-launcher.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
+          if [ -f "docs/readme-assets/logo.png" ]; then
+            cp docs/readme-assets/logo.png "$APPDIR/echo-launcher.png"
+            cp docs/readme-assets/logo.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/echo-launcher.png"
           elif [ -f "src/main/resources/icons/minecraft-launcher.png" ]; then
-            cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/minecraft-launcher.png"
-            cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
+            cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/echo-launcher.png"
+            cp src/main/resources/icons/minecraft-launcher.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/echo-launcher.png"
           else
             echo "No icon found. Creating placeholder icon."
-            convert -size 256x256 xc:#2563eb "$APPDIR/minecraft-launcher.png"
-            cp "$APPDIR/minecraft-launcher.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/minecraft-launcher.png"
+            convert -size 256x256 xc:#2563eb "$APPDIR/echo-launcher.png"
+            cp "$APPDIR/echo-launcher.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/echo-launcher.png"
           fi
 
       - name: Create Linux launcher script
         run: |
-          APPDIR="MinecraftLauncher.AppDir"
+          APPDIR="EchoLauncher.AppDir"
 
-          cat > "$APPDIR/usr/bin/minecraft-launcher" << 'EOF'
-          #!/bin/bash
-          HERE="$(dirname "$(readlink -f "$0")")"
-          APPDIR="$(dirname "$(dirname "$HERE")")"
+          cat > "$APPDIR/usr/bin/echo-launcher" << 'EOF'
+#!/bin/bash
+HERE="$(dirname "$(readlink -f "$0")")"
+APPDIR="$(dirname "$(dirname "$HERE")")"
 
-          JAVA="$APPDIR/usr/lib/runtime/bin/java"
-          JAR="$APPDIR/usr/lib/Minecraft_Launcher.jar"
-          DEPS="$APPDIR/usr/lib/deps/*"
-          JAVAFX="$APPDIR/usr/lib/javafx/lib"
+JAVA="$APPDIR/usr/lib/runtime/bin/java"
+JAR="$APPDIR/usr/lib/Echo_Launcher.jar"
+DEPS="$APPDIR/usr/lib/deps/*"
+JAVAFX="$APPDIR/usr/lib/javafx/lib"
 
-          exec "$JAVA" \
-            --module-path "$JAVAFX" \
-            --add-modules javafx.controls,javafx.fxml,javafx.web \
-            -cp "$JAR:$DEPS" \
-            launcher.Main "$@"
-          EOF
+exec "$JAVA" \
+  --module-path "$JAVAFX" \
+  --add-modules javafx.controls,javafx.fxml,javafx.web \
+  -cp "$JAR:$DEPS" \
+  launcher.Main "$@"
+EOF
 
-          chmod +x "$APPDIR/usr/bin/minecraft-launcher"
+          chmod +x "$APPDIR/usr/bin/echo-launcher"
 
       - name: Create Linux AppRun
         run: |
-          APPDIR="MinecraftLauncher.AppDir"
+          APPDIR="EchoLauncher.AppDir"
 
           cat > "$APPDIR/AppRun" << 'EOF'
-          #!/bin/bash
-          APPDIR="$(dirname "$(readlink -f "$0")")"
-          exec "$APPDIR/usr/bin/minecraft-launcher" "$@"
-          EOF
+#!/bin/bash
+APPDIR="$(dirname "$(readlink -f "$0")")"
+exec "$APPDIR/usr/bin/echo-launcher" "$@"
+EOF
 
           chmod +x "$APPDIR/AppRun"
 
       - name: Create Linux desktop file
         run: |
-          APPDIR="MinecraftLauncher.AppDir"
+          APPDIR="EchoLauncher.AppDir"
 
-          cat > "$APPDIR/minecraft-launcher.desktop" << 'EOF'
-          [Desktop Entry]
-          Type=Application
-          Name=Minecraft Launcher
-          Exec=minecraft-launcher
-          Icon=minecraft-launcher
-          Categories=Game;
-          Terminal=false
-          EOF
+          cat > "$APPDIR/echo-launcher.desktop" << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Echo Launcher
+Exec=echo-launcher
+Icon=echo-launcher
+Categories=Game;
+Terminal=false
+EOF
 
-          cp "$APPDIR/minecraft-launcher.desktop" "$APPDIR/usr/share/applications/minecraft-launcher.desktop"
+          cp "$APPDIR/echo-launcher.desktop" "$APPDIR/usr/share/applications/echo-launcher.desktop"
 
       - name: Download appimagetool
         run: |
           wget -O appimagetool-x86_64.AppImage \
             "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
-
           chmod +x appimagetool-x86_64.AppImage
 
       - name: Build Linux AppImage
         run: |
           export ARCH=x86_64
           export APPIMAGE_EXTRACT_AND_RUN=1
-
-          ./appimagetool-x86_64.AppImage MinecraftLauncher.AppDir Minecraft_Launcher-linux-x86_64.AppImage
-
-          chmod +x Minecraft_Launcher-linux-x86_64.AppImage
+          ./appimagetool-x86_64.AppImage EchoLauncher.AppDir Echo_Launcher-linux-x86_64.AppImage
+          chmod +x Echo_Launcher-linux-x86_64.AppImage
 
       - name: Upload Linux AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Minecraft_Launcher_Linux_AppImage
-          path: Minecraft_Launcher-linux-x86_64.AppImage
+          name: Echo_Launcher_Linux_AppImage
+          path: Echo_Launcher-linux-x86_64.AppImage
 
   build-windows-portable:
     name: Build Windows Portable ZIP
@@ -256,7 +264,7 @@ jobs:
       - name: Prepare Windows portable directory
         shell: pwsh
         run: |
-          $APPDIR = "MinecraftLauncher-Windows"
+          $APPDIR = "EchoLauncher-Windows"
 
           if (Test-Path $APPDIR) {
             Remove-Item $APPDIR -Recurse -Force
@@ -267,7 +275,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$APPDIR\runtime" | Out-Null
           New-Item -ItemType Directory -Force -Path "$APPDIR\javafx" | Out-Null
 
-          Copy-Item "${{ steps.locate_jar.outputs.jar_file }}" "$APPDIR\app\Minecraft_Launcher.jar"
+          Copy-Item "${{ steps.locate_jar.outputs.jar_file }}" "$APPDIR\app\Echo_Launcher.jar"
 
           if (Test-Path "target\dependency") {
             Copy-Item "target\dependency\*.jar" "$APPDIR\app\deps\" -ErrorAction SilentlyContinue
@@ -287,21 +295,18 @@ jobs:
       - name: Download Windows Java Runtime
         shell: pwsh
         run: |
-          $APPDIR = "MinecraftLauncher-Windows"
+          $APPDIR = "EchoLauncher-Windows"
 
           New-Item -ItemType Directory -Force -Path "runtime-download" | Out-Null
-
           $runtimeZip = "runtime-download\runtime.zip"
+
           Invoke-WebRequest `
             -Uri "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jre/hotspot/normal/eclipse" `
             -OutFile $runtimeZip
 
           Expand-Archive -Path $runtimeZip -DestinationPath "runtime-download\extracted" -Force
-
           $root = Get-ChildItem "runtime-download\extracted" | Select-Object -First 1
-
           Copy-Item "$($root.FullName)\*" "$APPDIR\runtime\" -Recurse -Force
-
           Remove-Item "runtime-download" -Recurse -Force
 
           & "$APPDIR\runtime\bin\java.exe" -version
@@ -309,17 +314,16 @@ jobs:
       - name: Download Windows JavaFX SDK
         shell: pwsh
         run: |
-          $APPDIR = "MinecraftLauncher-Windows"
+          $APPDIR = "EchoLauncher-Windows"
 
           New-Item -ItemType Directory -Force -Path "javafx-download" | Out-Null
-
           $javafxZip = "javafx-download\javafx.zip"
+
           Invoke-WebRequest `
             -Uri "https://download2.gluonhq.com/openjfx/21.0.2/openjfx-21.0.2_windows-x64_bin-sdk.zip" `
             -OutFile $javafxZip
 
           Expand-Archive -Path $javafxZip -DestinationPath "javafx-download\extracted" -Force
-
           $sdk = Get-ChildItem "javafx-download\extracted" | Select-Object -First 1
 
           New-Item -ItemType Directory -Force -Path "$APPDIR\javafx\lib" | Out-Null
@@ -333,147 +337,140 @@ jobs:
 
           Remove-Item "javafx-download" -Recurse -Force
 
-          Write-Host "JavaFX lib files:"
-          Get-ChildItem "$APPDIR\javafx\lib"
-
-          Write-Host "JavaFX bin files:"
-          Get-ChildItem "$APPDIR\javafx\bin"
-
       - name: Add Windows icon
         shell: pwsh
         run: |
-          $APPDIR = "MinecraftLauncher-Windows"
+          $APPDIR = "EchoLauncher-Windows"
 
-          if (Test-Path "minecraft-launcher.png") {
-            Copy-Item "minecraft-launcher.png" "$APPDIR\minecraft-launcher.png"
+          if (Test-Path "docs\readme-assets\logo.png") {
+            Copy-Item "docs\readme-assets\logo.png" "$APPDIR\echo-launcher.png"
           } elseif (Test-Path "src\main\resources\icons\minecraft-launcher.png") {
-            Copy-Item "src\main\resources\icons\minecraft-launcher.png" "$APPDIR\minecraft-launcher.png"
+            Copy-Item "src\main\resources\icons\minecraft-launcher.png" "$APPDIR\echo-launcher.png"
           }
 
       - name: Create Windows launcher BAT
         shell: pwsh
         run: |
-          $APPDIR = "MinecraftLauncher-Windows"
+          $APPDIR = "EchoLauncher-Windows"
 
           @'
-          @echo off
-          chcp 65001 >nul
-          setlocal
+@echo off
+chcp 65001 >nul
+setlocal
 
-          cd /d "%~dp0"
+cd /d "%~dp0"
 
-          set "APPDIR=%~dp0"
-          set "JAVA=%APPDIR%runtime\bin\java.exe"
-          set "JAR=%APPDIR%app\Minecraft_Launcher.jar"
-          set "DEPS=%APPDIR%app\deps\*"
-          set "JAVAFX_LIB=%APPDIR%javafx\lib"
-          set "JAVAFX_BIN=%APPDIR%javafx\bin"
-          set "LOG=%APPDIR%launcher-startup.log"
+set "APPDIR=%~dp0"
+set "JAVA=%APPDIR%runtime\bin\java.exe"
+set "JAR=%APPDIR%app\Echo_Launcher.jar"
+set "DEPS=%APPDIR%app\deps\*"
+set "JAVAFX_LIB=%APPDIR%javafx\lib"
+set "JAVAFX_BIN=%APPDIR%javafx\bin"
+set "LOG=%APPDIR%launcher-startup.log"
 
-          echo Starting Minecraft Launcher... > "%LOG%"
-          echo APPDIR=%APPDIR%>> "%LOG%"
-          echo JAVA=%JAVA%>> "%LOG%"
-          echo JAR=%JAR%>> "%LOG%"
-          echo DEPS=%DEPS%>> "%LOG%"
-          echo JAVAFX_LIB=%JAVAFX_LIB%>> "%LOG%"
-          echo JAVAFX_BIN=%JAVAFX_BIN%>> "%LOG%"
-          echo.>> "%LOG%"
+echo Starting Echo Launcher... > "%LOG%"
+echo APPDIR=%APPDIR%>> "%LOG%"
+echo JAVA=%JAVA%>> "%LOG%"
+echo JAR=%JAR%>> "%LOG%"
+echo DEPS=%DEPS%>> "%LOG%"
+echo JAVAFX_LIB=%JAVAFX_LIB%>> "%LOG%"
+echo JAVAFX_BIN=%JAVAFX_BIN%>> "%LOG%"
+echo.>> "%LOG%"
 
-          if not exist "%JAVA%" goto missing_java
-          if not exist "%JAR%" goto missing_jar
-          if not exist "%JAVAFX_LIB%" goto missing_javafx_lib
-          if not exist "%JAVAFX_BIN%" goto missing_javafx_bin
+if not exist "%JAVA%" goto missing_java
+if not exist "%JAR%" goto missing_jar
+if not exist "%JAVAFX_LIB%" goto missing_javafx_lib
+if not exist "%JAVAFX_BIN%" goto missing_javafx_bin
 
-          set "PATH=%JAVAFX_BIN%;%PATH%"
+set "PATH=%JAVAFX_BIN%;%PATH%"
 
-          echo Java version:>> "%LOG%"
-          "%JAVA%" -version >> "%LOG%" 2>&1
-          echo.>> "%LOG%"
+echo Java version:>> "%LOG%"
+"%JAVA%" -version >> "%LOG%" 2>&1
+echo.>> "%LOG%"
 
-          echo Running command...>> "%LOG%"
-          echo "%JAVA%" --module-path "%JAVAFX_LIB%" --add-modules javafx.controls,javafx.fxml,javafx.web -Djava.library.path="%JAVAFX_BIN%" -cp "%JAR%;%DEPS%" launcher.Main>> "%LOG%"
-          echo.>> "%LOG%"
+echo Running command...>> "%LOG%"
+echo "%JAVA%" --module-path "%JAVAFX_LIB%" --add-modules javafx.controls,javafx.fxml,javafx.web -Djava.library.path="%JAVAFX_BIN%" -cp "%JAR%;%DEPS%" launcher.Main>> "%LOG%"
+echo.>> "%LOG%"
 
-          "%JAVA%" ^
-            --module-path "%JAVAFX_LIB%" ^
-            --add-modules javafx.controls,javafx.fxml,javafx.web ^
-            -Djava.library.path="%JAVAFX_BIN%" ^
-            -cp "%JAR%;%DEPS%" ^
-            launcher.Main >> "%LOG%" 2>&1
+"%JAVA%" ^
+  --module-path "%JAVAFX_LIB%" ^
+  --add-modules javafx.controls,javafx.fxml,javafx.web ^
+  -Djava.library.path="%JAVAFX_BIN%" ^
+  -cp "%JAR%;%DEPS%" ^
+  launcher.Main >> "%LOG%" 2>&1
 
-          set "EXITCODE=%ERRORLEVEL%"
+set "EXITCODE=%ERRORLEVEL%"
 
-          echo.>> "%LOG%"
-          echo Exit code: %EXITCODE%>> "%LOG%"
+echo.>> "%LOG%"
+echo Exit code: %EXITCODE%>> "%LOG%"
 
-          if not "%EXITCODE%"=="0" goto failed
+if not "%EXITCODE%"=="0" goto failed
+exit /b 0
 
-          exit /b 0
+:missing_java
+echo Java runtime not found.>> "%LOG%"
+echo Expected: %JAVA%>> "%LOG%"
+echo Java runtime not found.
+echo Expected: %JAVA%
+pause
+exit /b 1
 
-          :missing_java
-          echo Java runtime not found.>> "%LOG%"
-          echo Expected: %JAVA%>> "%LOG%"
-          echo Java runtime not found.
-          echo Expected: %JAVA%
-          pause
-          exit /b 1
+:missing_jar
+echo Launcher jar not found.>> "%LOG%"
+echo Expected: %JAR%>> "%LOG%"
+echo Launcher jar not found.
+echo Expected: %JAR%
+pause
+exit /b 1
 
-          :missing_jar
-          echo Launcher jar not found.>> "%LOG%"
-          echo Expected: %JAR%>> "%LOG%"
-          echo Launcher jar not found.
-          echo Expected: %JAR%
-          pause
-          exit /b 1
+:missing_javafx_lib
+echo JavaFX lib folder not found.>> "%LOG%"
+echo Expected: %JAVAFX_LIB%>> "%LOG%"
+echo JavaFX lib folder not found.
+echo Expected: %JAVAFX_LIB%
+pause
+exit /b 1
 
-          :missing_javafx_lib
-          echo JavaFX lib folder not found.>> "%LOG%"
-          echo Expected: %JAVAFX_LIB%>> "%LOG%"
-          echo JavaFX lib folder not found.
-          echo Expected: %JAVAFX_LIB%
-          pause
-          exit /b 1
+:missing_javafx_bin
+echo JavaFX bin folder not found.>> "%LOG%"
+echo Expected: %JAVAFX_BIN%>> "%LOG%"
+echo JavaFX bin folder not found.
+echo Expected: %JAVAFX_BIN%
+pause
+exit /b 1
 
-          :missing_javafx_bin
-          echo JavaFX bin folder not found.>> "%LOG%"
-          echo Expected: %JAVAFX_BIN%>> "%LOG%"
-          echo JavaFX bin folder not found.
-          echo Expected: %JAVAFX_BIN%
-          pause
-          exit /b 1
+:failed
+echo.
+echo Echo Launcher failed. Check launcher-startup.log
+echo.
+type "%LOG%"
+pause
+exit /b %EXITCODE%
 
-          :failed
-          echo.
-          echo Launcher failed. Check launcher-startup.log
-          echo.
-          type "%LOG%"
-          pause
-          exit /b %EXITCODE%
-
-          endlocal
-          '@ | Out-File -FilePath "$APPDIR\MinecraftLauncher.bat" -Encoding ASCII
-
-      - name: Zip Windows portable package
-        shell: pwsh
-        run: |
-          Compress-Archive -Path "MinecraftLauncher-Windows" -DestinationPath "Minecraft_Launcher-windows-x64.zip" -Force
+endlocal
+'@ | Out-File -FilePath "$APPDIR\EchoLauncher.bat" -Encoding ASCII
 
       - name: Create Windows silent launcher
         shell: pwsh
         run: |
-          $APPDIR = "MinecraftLauncher-Windows"
+          $APPDIR = "EchoLauncher-Windows"
 
           @'
-          Set WshShell = CreateObject("WScript.Shell")
-          WshShell.Run chr(34) & CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName) & "\MinecraftLauncher.bat" & chr(34), 0
-          Set WshShell = Nothing
-          '@ | Out-File -FilePath "$APPDIR\MinecraftLauncher.vbs" -Encoding ASCII
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run chr(34) & CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName) & "\EchoLauncher.bat" & chr(34), 0
+Set WshShell = Nothing
+'@ | Out-File -FilePath "$APPDIR\EchoLauncher.vbs" -Encoding ASCII
+
+      - name: Zip Windows portable package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "EchoLauncher-Windows" -DestinationPath "Echo_Launcher-windows-x64.zip" -Force
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Minecraft_Launcher_Windows_Portable
-          path: Minecraft_Launcher-windows-x64.zip
+          name: Echo_Launcher_Windows_Portable
+          path: Echo_Launcher-windows-x64.zip
 
   build-macos-app:
     name: Build macOS App ZIP
@@ -522,7 +519,7 @@ jobs:
 
       - name: Prepare macOS .app structure
         run: |
-          APP="Minecraft Launcher.app"
+          APP="Echo Launcher.app"
 
           rm -rf "$APP"
 
@@ -532,7 +529,7 @@ jobs:
           mkdir -p "$APP/Contents/Resources/runtime"
           mkdir -p "$APP/Contents/Resources/javafx"
 
-          cp "${{ steps.locate_jar.outputs.jar_file }}" "$APP/Contents/Resources/app/Minecraft_Launcher.jar"
+          cp "${{ steps.locate_jar.outputs.jar_file }}" "$APP/Contents/Resources/app/Echo_Launcher.jar"
 
           if [ -d "target/dependency" ]; then
             cp target/dependency/*.jar "$APP/Contents/Resources/app/deps/" || true
@@ -547,20 +544,16 @@ jobs:
 
       - name: Download macOS Java Runtime
         run: |
-          APP="Minecraft Launcher.app"
+          APP="Echo Launcher.app"
 
           mkdir -p runtime-download
-
           wget -O runtime-download/runtime.tar.gz \
             "https://api.adoptium.net/v3/binary/latest/21/ga/mac/x64/jre/hotspot/normal/eclipse"
 
           mkdir -p runtime-download/extracted
           tar -xf runtime-download/runtime.tar.gz -C runtime-download/extracted
-
           ROOT=$(find runtime-download/extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
-
           cp -R "$ROOT/"* "$APP/Contents/Resources/runtime/"
-
           rm -rf runtime-download
 
           if [ -x "$APP/Contents/Resources/runtime/Contents/Home/bin/java" ]; then
@@ -571,105 +564,200 @@ jobs:
 
       - name: Download macOS JavaFX SDK
         run: |
-          APP="Minecraft Launcher.app"
+          APP="Echo Launcher.app"
 
           mkdir -p javafx-download
-
           wget -O javafx-download/javafx.zip \
             "https://download2.gluonhq.com/openjfx/21.0.2/openjfx-21.0.2_osx-x64_bin-sdk.zip"
 
           unzip javafx-download/javafx.zip -d javafx-download
-
           cp -R javafx-download/javafx-sdk-21.0.2/lib "$APP/Contents/Resources/javafx/lib"
-
           rm -rf javafx-download
 
       - name: Add macOS icon resources
         run: |
-          APP="Minecraft Launcher.app"
+          APP="Echo Launcher.app"
 
-          if [ -f "minecraft-launcher.png" ]; then
-            cp minecraft-launcher.png "$APP/Contents/Resources/minecraft-launcher.png"
+          if [ -f "docs/readme-assets/logo.png" ]; then
+            cp docs/readme-assets/logo.png "$APP/Contents/Resources/echo-launcher.png"
           elif [ -f "src/main/resources/icons/minecraft-launcher.png" ]; then
-            cp src/main/resources/icons/minecraft-launcher.png "$APP/Contents/Resources/minecraft-launcher.png"
+            cp src/main/resources/icons/minecraft-launcher.png "$APP/Contents/Resources/echo-launcher.png"
           fi
 
       - name: Create macOS launcher executable
         run: |
-          APP="Minecraft Launcher.app"
+          APP="Echo Launcher.app"
 
-          cat > "$APP/Contents/MacOS/MinecraftLauncher" << 'EOF'
-          #!/bin/bash
+          cat > "$APP/Contents/MacOS/EchoLauncher" << 'EOF'
+#!/bin/bash
+APPDIR="$(cd "$(dirname "$0")/.." && pwd)"
+RES="$APPDIR/Resources"
 
-          APPDIR="$(cd "$(dirname "$0")/.." && pwd)"
-          RES="$APPDIR/Resources"
+if [ -x "$RES/runtime/Contents/Home/bin/java" ]; then
+  JAVA="$RES/runtime/Contents/Home/bin/java"
+else
+  JAVA="$RES/runtime/bin/java"
+fi
 
-          if [ -x "$RES/runtime/Contents/Home/bin/java" ]; then
-            JAVA="$RES/runtime/Contents/Home/bin/java"
-          else
-            JAVA="$RES/runtime/bin/java"
-          fi
+JAR="$RES/app/Echo_Launcher.jar"
+DEPS="$RES/app/deps/*"
+JAVAFX="$RES/javafx/lib"
 
-          JAR="$RES/app/Minecraft_Launcher.jar"
-          DEPS="$RES/app/deps/*"
-          JAVAFX="$RES/javafx/lib"
+exec "$JAVA" \
+  -XstartOnFirstThread \
+  --module-path "$JAVAFX" \
+  --add-modules javafx.controls,javafx.fxml,javafx.web \
+  -cp "$JAR:$DEPS" \
+  launcher.Main "$@"
+EOF
 
-          exec "$JAVA" \
-            -XstartOnFirstThread \
-            --module-path "$JAVAFX" \
-            --add-modules javafx.controls,javafx.fxml,javafx.web \
-            -cp "$JAR:$DEPS" \
-            launcher.Main "$@"
-          EOF
-
-          chmod +x "$APP/Contents/MacOS/MinecraftLauncher"
+          chmod +x "$APP/Contents/MacOS/EchoLauncher"
 
       - name: Create macOS Info.plist
         run: |
-          APP="Minecraft Launcher.app"
+          APP="Echo Launcher.app"
 
           cat > "$APP/Contents/Info.plist" << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleName</key>
-              <string>Minecraft Launcher</string>
-
-              <key>CFBundleDisplayName</key>
-              <string>Minecraft Launcher</string>
-
-              <key>CFBundleIdentifier</key>
-              <string>com.example.minecraftlauncher</string>
-
-              <key>CFBundleVersion</key>
-              <string>1.0.0</string>
-
-              <key>CFBundleShortVersionString</key>
-              <string>1.0.0</string>
-
-              <key>CFBundleExecutable</key>
-              <string>MinecraftLauncher</string>
-
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-
-              <key>LSMinimumSystemVersion</key>
-              <string>10.13</string>
-
-              <key>NSHighResolutionCapable</key>
-              <true/>
-          </dict>
-          </plist>
-          EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>Echo Launcher</string>
+  <key>CFBundleDisplayName</key>
+  <string>Echo Launcher</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.echo.launcher</string>
+  <key>CFBundleVersion</key>
+  <string>1.0.0</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0.0</string>
+  <key>CFBundleExecutable</key>
+  <string>EchoLauncher</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>10.13</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+</dict>
+</plist>
+EOF
 
       - name: Zip macOS app
         run: |
-          zip -r "Minecraft_Launcher-macos-x64.zip" "Minecraft Launcher.app"
+          zip -r "Echo_Launcher-macos-x64.zip" "Echo Launcher.app"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Minecraft_Launcher_macOS_App
-          path: Minecraft_Launcher-macos-x64.zip
+          name: Echo_Launcher_macOS_App
+          path: Echo_Launcher-macos-x64.zip
+
+  publish-release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-22.04
+    needs:
+      - build-linux-appimage
+      - build-windows-portable
+      - build-macos-app
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List artifacts
+        run: |
+          find dist -type f -maxdepth 2 -print
+
+      - name: Determine release tag
+        id: release_tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="${{ github.event.inputs.version }}"
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Using release tag: $TAG"
+
+      - name: Generate release notes
+        run: |
+          cat > RELEASE_NOTES.md << 'EOF'
+# Echo Launcher Release
+
+Thank you for using **Echo Launcher**.
+
+## Downloads
+
+Choose the package for your platform:
+
+| Platform | File |
+|---|---|
+| Linux | `Echo_Launcher-linux-x86_64.AppImage` |
+| Windows | `Echo_Launcher-windows-x64.zip` |
+| macOS | `Echo_Launcher-macos-x64.zip` |
+
+## Installation
+
+### Linux
+
+```bash
+chmod +x Echo_Launcher-linux-x86_64.AppImage
+./Echo_Launcher-linux-x86_64.AppImage
+```
+
+### Windows
+
+1. Download `Echo_Launcher-windows-x64.zip`.
+2. Extract it.
+3. Run `EchoLauncher.bat`.
+4. If there is an issue, check `launcher-startup.log`.
+
+### macOS
+
+1. Download `Echo_Launcher-macos-x64.zip`.
+2. Extract it.
+3. Open `Echo Launcher.app`.
+4. If macOS blocks it, run:
+
+```bash
+xattr -dr com.apple.quarantine "Echo Launcher.app"
+```
+
+## Highlights
+
+- Prism-like instance system.
+- Modrinth and CurseForge support.
+- Mods, shaders, resource packs, and modpacks.
+- Custom client jar support.
+- JVM arguments per instance.
+- Java runtime auto-management.
+- Fabric installer with loader selection.
+- Pre-launch checker and crash analyzer.
+- World and screenshot managers.
+
+## Notes
+
+- CurseForge requires a valid API Key configured in settings.
+- Some CurseForge files may block third-party downloads.
+- This project is in active development.
+EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: Echo Launcher ${{ steps.release_tag.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          prerelease: ${{ github.event.inputs.prerelease || false }}
+          files: |
+            dist/Echo_Launcher-linux-x86_64.AppImage
+            dist/Echo_Launcher-windows-x64.zip
+            dist/Echo_Launcher-macos-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
