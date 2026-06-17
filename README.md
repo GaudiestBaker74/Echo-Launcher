@@ -25,7 +25,7 @@
   <img alt="Java" src="https://img.shields.io/badge/Java-21+-f97316?style=for-the-badge&logo=openjdk&logoColor=white">
   <img alt="JavaFX" src="https://img.shields.io/badge/JavaFX-UI-2563eb?style=for-the-badge">
   <img alt="Modrinth" src="https://img.shields.io/badge/Modrinth-Supported-00AF5C?style=for-the-badge&logo=modrinth&logoColor=white">
-  <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-Supported-F16436?style=for-the-badge">
+  <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-Supported-F16436?style=for-the-badge&logo=CurseForge&logoColor=white%22">
 </p>
 
 </div>
