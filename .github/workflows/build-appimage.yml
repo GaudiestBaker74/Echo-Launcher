@@ -357,60 +357,42 @@ jobs:
 
           @'
           @echo off
+          chcp 65001 >nul
           setlocal
 
           cd /d "%~dp0"
 
-          set APPDIR=%~dp0
-          set JAVA=%APPDIR%runtime\bin\java.exe
-          set JAR=%APPDIR%app\Minecraft_Launcher.jar
-          set DEPS=%APPDIR%app\deps\*
-          set JAVAFX_LIB=%APPDIR%javafx\lib
-          set JAVAFX_BIN=%APPDIR%javafx\bin
-          set LOG=%APPDIR%launcher-startup.log
+          set "APPDIR=%~dp0"
+          set "JAVA=%APPDIR%runtime\bin\java.exe"
+          set "JAR=%APPDIR%app\Minecraft_Launcher.jar"
+          set "DEPS=%APPDIR%app\deps\*"
+          set "JAVAFX_LIB=%APPDIR%javafx\lib"
+          set "JAVAFX_BIN=%APPDIR%javafx\bin"
+          set "LOG=%APPDIR%launcher-startup.log"
 
           echo Starting Minecraft Launcher... > "%LOG%"
-          echo APPDIR=%APPDIR% >> "%LOG%"
-          echo JAVA=%JAVA% >> "%LOG%"
-          echo JAR=%JAR% >> "%LOG%"
-          echo DEPS=%DEPS% >> "%LOG%"
-          echo JAVAFX_LIB=%JAVAFX_LIB% >> "%LOG%"
-          echo JAVAFX_BIN=%JAVAFX_BIN% >> "%LOG%"
-          echo. >> "%LOG%"
+          echo APPDIR=%APPDIR%>> "%LOG%"
+          echo JAVA=%JAVA%>> "%LOG%"
+          echo JAR=%JAR%>> "%LOG%"
+          echo DEPS=%DEPS%>> "%LOG%"
+          echo JAVAFX_LIB=%JAVAFX_LIB%>> "%LOG%"
+          echo JAVAFX_BIN=%JAVAFX_BIN%>> "%LOG%"
+          echo.>> "%LOG%"
 
-          if not exist "%JAVA%" (
-            echo Java runtime not found: %JAVA% >> "%LOG%"
-            echo Java runtime not found: %JAVA%
-            pause
-            exit /b 1
-          )
+          if not exist "%JAVA%" goto missing_java
+          if not exist "%JAR%" goto missing_jar
+          if not exist "%JAVAFX_LIB%" goto missing_javafx_lib
+          if not exist "%JAVAFX_BIN%" goto missing_javafx_bin
 
-          if not exist "%JAR%" (
-            echo Launcher jar not found: %JAR% >> "%LOG%"
-            echo Launcher jar not found: %JAR%
-            pause
-            exit /b 1
-          )
+          set "PATH=%JAVAFX_BIN%;%PATH%"
 
-          if not exist "%JAVAFX_LIB%" (
-            echo JavaFX lib folder not found: %JAVAFX_LIB% >> "%LOG%"
-            echo JavaFX lib folder not found: %JAVAFX_LIB%
-            pause
-            exit /b 1
-          )
+          echo Java version:>> "%LOG%"
+          "%JAVA%" -version >> "%LOG%" 2>&1
+          echo.>> "%LOG%"
 
-          if not exist "%JAVAFX_BIN%" (
-            echo JavaFX bin folder not found: %JAVAFX_BIN% >> "%LOG%"
-            echo JavaFX bin folder not found: %JAVAFX_BIN%
-            pause
-            exit /b 1
-          )
-
-          set PATH=%JAVAFX_BIN%;%PATH%
-
-          echo Running command... >> "%LOG%"
-          echo "%JAVA%" --module-path "%JAVAFX_LIB%" --add-modules javafx.controls,javafx.fxml,javafx.web -Djava.library.path="%JAVAFX_BIN%" -cp "%JAR%;%DEPS%" launcher.Main >> "%LOG%"
-          echo. >> "%LOG%"
+          echo Running command...>> "%LOG%"
+          echo "%JAVA%" --module-path "%JAVAFX_LIB%" --add-modules javafx.controls,javafx.fxml,javafx.web -Djava.library.path="%JAVAFX_BIN%" -cp "%JAR%;%DEPS%" launcher.Main>> "%LOG%"
+          echo.>> "%LOG%"
 
           "%JAVA%" ^
             --module-path "%JAVAFX_LIB%" ^
@@ -419,17 +401,54 @@ jobs:
             -cp "%JAR%;%DEPS%" ^
             launcher.Main >> "%LOG%" 2>&1
 
-          set EXITCODE=%ERRORLEVEL%
+          set "EXITCODE=%ERRORLEVEL%"
 
-          echo. >> "%LOG%"
-          echo Exit code: %EXITCODE% >> "%LOG%"
+          echo.>> "%LOG%"
+          echo Exit code: %EXITCODE%>> "%LOG%"
 
-          if not "%EXITCODE%"=="0" (
-            echo.
-            echo Launcher failed. Check launcher-startup.log
-            type "%LOG%"
-            pause
-          )
+          if not "%EXITCODE%"=="0" goto failed
+
+          exit /b 0
+
+          :missing_java
+          echo Java runtime not found.>> "%LOG%"
+          echo Expected: %JAVA%>> "%LOG%"
+          echo Java runtime not found.
+          echo Expected: %JAVA%
+          pause
+          exit /b 1
+
+          :missing_jar
+          echo Launcher jar not found.>> "%LOG%"
+          echo Expected: %JAR%>> "%LOG%"
+          echo Launcher jar not found.
+          echo Expected: %JAR%
+          pause
+          exit /b 1
+
+          :missing_javafx_lib
+          echo JavaFX lib folder not found.>> "%LOG%"
+          echo Expected: %JAVAFX_LIB%>> "%LOG%"
+          echo JavaFX lib folder not found.
+          echo Expected: %JAVAFX_LIB%
+          pause
+          exit /b 1
+
+          :missing_javafx_bin
+          echo JavaFX bin folder not found.>> "%LOG%"
+          echo Expected: %JAVAFX_BIN%>> "%LOG%"
+          echo JavaFX bin folder not found.
+          echo Expected: %JAVAFX_BIN%
+          pause
+          exit /b 1
+
+          :failed
+          echo.
+          echo Launcher failed. Check launcher-startup.log
+          echo.
+          type "%LOG%"
+          pause
+          exit /b %EXITCODE%
 
           endlocal
           '@ | Out-File -FilePath "$APPDIR\MinecraftLauncher.bat" -Encoding ASCII
