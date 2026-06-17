@@ -19,19 +19,29 @@ public class JavaRuntimeManager {
         File existingJava = findJavaExecutable(runtimeDir);
 
         if (existingJava != null && existingJava.exists()) {
+            makeExecutable(existingJava);
             System.out.println("[JavaRuntime] Usando Java " + majorVersion + ": " + existingJava.getAbsolutePath());
             return existingJava.getAbsolutePath();
         }
 
         System.out.println("[JavaRuntime] Java " + majorVersion + " no encontrado. Descargando runtime...");
 
+        deleteDirectory(runtimeDir);
+        runtimeDir.mkdirs();
+
         downloadAndExtractRuntime(majorVersion, runtimeDir);
 
         File javaExe = findJavaExecutable(runtimeDir);
 
         if (javaExe == null || !javaExe.exists()) {
-            throw new Exception("No se pudo encontrar java.exe después de descargar Java " + majorVersion);
+            throw new Exception(
+                    "No se pudo encontrar " + PlatformManager.getJavaExecutableName() +
+                            " después de descargar Java " + majorVersion +
+                            " en " + runtimeDir.getAbsolutePath()
+            );
         }
+
+        makeExecutable(javaExe);
 
         System.out.println("[JavaRuntime] Java " + majorVersion + " instalado: " + javaExe.getAbsolutePath());
 
@@ -40,32 +50,32 @@ public class JavaRuntimeManager {
 
     private static File getRuntimeDir(int majorVersion) {
         File baseDir = new File(PlatformManager.getLauncherDataDir(), "runtimes");
-        return new File(baseDir, "java-" + majorVersion);
+        return new File(baseDir, "java-" + majorVersion + "-" + PlatformManager.getAdoptiumOSName() + "-" + PlatformManager.getAdoptiumArch());
     }
 
     private static void downloadAndExtractRuntime(int majorVersion, File runtimeDir) throws Exception {
         runtimeDir.mkdirs();
 
-        File zipFile = new File(runtimeDir, "runtime.zip");
+        File archiveFile = new File(runtimeDir, "runtime.archive");
 
-        if (zipFile.exists()) {
-            zipFile.delete();
+        if (archiveFile.exists()) {
+            archiveFile.delete();
         }
 
         String url = buildAdoptiumUrl(majorVersion, "jre");
 
         try {
-            downloadFile(url, zipFile);
+            downloadFile(url, archiveFile);
         } catch (Exception jreError) {
             System.err.println("[JavaRuntime] No se pudo descargar JRE. Probando JDK. Error: " + jreError.getMessage());
 
             url = buildAdoptiumUrl(majorVersion, "jdk");
-            downloadFile(url, zipFile);
+            downloadFile(url, archiveFile);
         }
 
-        extractZip(zipFile, runtimeDir);
+        extractArchive(archiveFile, runtimeDir);
 
-        zipFile.delete();
+        archiveFile.delete();
     }
 
     private static String buildAdoptiumUrl(int majorVersion, String imageType) {
@@ -81,30 +91,6 @@ public class JavaRuntimeManager {
                 + "/"
                 + imageType
                 + "/hotspot/normal/eclipse";
-    }
-
-    private static String getAdoptiumOs() {
-        String os = System.getProperty("os.name").toLowerCase();
-
-        if (os.contains("win")) {
-            return "windows";
-        }
-
-        if (os.contains("mac")) {
-            return "mac";
-        }
-
-        return "linux";
-    }
-
-    private static String getAdoptiumArch() {
-        String arch = System.getProperty("os.arch").toLowerCase();
-
-        if (arch.contains("aarch64") || arch.contains("arm64")) {
-            return "aarch64";
-        }
-
-        return "x64";
     }
 
     private static void downloadFile(String urlStr, File targetFile) throws Exception {
@@ -167,14 +153,14 @@ public class JavaRuntimeManager {
     private static HttpURLConnection openConnectionFollowingRedirects(String urlStr) throws Exception {
         String current = urlStr;
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 10; i++) {
             URL url = URI.create(current).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("GET");
             conn.setRequestProperty("User-Agent", USER_AGENT);
             conn.setConnectTimeout(30000);
-            conn.setReadTimeout(30000);
+            conn.setReadTimeout(60000);
             conn.setInstanceFollowRedirects(false);
 
             int code = conn.getResponseCode();
@@ -195,6 +181,18 @@ public class JavaRuntimeManager {
         }
 
         throw new Exception("Demasiados redirects descargando Java.");
+    }
+
+    private static void extractArchive(File archiveFile, File targetDir) throws Exception {
+        /*
+         * Adoptium returns .zip for Windows and .tar.gz for Linux/macOS.
+         * We saved it without extension, so detect by OS.
+         */
+        if (PlatformManager.isWindows()) {
+            extractZip(archiveFile, targetDir);
+        } else {
+            extractTarGz(archiveFile, targetDir);
+        }
     }
 
     private static void extractZip(File zipFile, File targetDir) throws Exception {
@@ -251,6 +249,44 @@ public class JavaRuntimeManager {
         }
     }
 
+    private static void extractTarGz(File archiveFile, File targetDir) throws Exception {
+        /*
+         * Use system tar on Linux/macOS.
+         * This is much simpler than implementing TAR manually.
+         */
+        ProcessBuilder pb = new ProcessBuilder(
+                "tar",
+                "-xzf",
+                archiveFile.getAbsolutePath(),
+                "-C",
+                targetDir.getAbsolutePath()
+        );
+
+        pb.redirectErrorStream(true);
+
+        Process process = pb.start();
+
+        java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(process.getInputStream())
+        );
+
+        try {
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                System.out.println("[JavaRuntime/tar] " + line);
+            }
+        } finally {
+            reader.close();
+        }
+
+        int exit = process.waitFor();
+
+        if (exit != 0) {
+            throw new Exception("No se pudo extraer runtime Java con tar. Código: " + exit);
+        }
+    }
+
     private static File findJavaExecutable(File dir) {
         if (dir == null || !dir.exists()) {
             return null;
@@ -291,7 +327,32 @@ public class JavaRuntimeManager {
         return null;
     }
 
-    private static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase().contains("win");
+    private static void makeExecutable(File file) {
+        try {
+            if (file != null && file.exists() && !PlatformManager.isWindows()) {
+                file.setExecutable(true);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void deleteDirectory(File file) {
+        if (file == null || !file.exists()) {
+            return;
+        }
+
+        if (file.isDirectory()) {
+            File[] children = file.listFiles();
+
+            if (children != null) {
+                for (File child : children) {
+                    deleteDirectory(child);
+                }
+            }
+        }
+
+        if (!file.delete()) {
+            System.err.println("[JavaRuntime] No se pudo borrar: " + file.getAbsolutePath());
+        }
     }
 }
