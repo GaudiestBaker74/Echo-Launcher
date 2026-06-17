@@ -22,6 +22,7 @@ import javafx.scene.web.WebView;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.input.MouseEvent;
+import java.io.StringWriter;
 
 import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
@@ -81,6 +82,13 @@ public class LauncherUI extends Application {
     private Label heroUserLabel;
     private Button topInstanceBtn;
     private Label topUserLabel;
+    private Label dashboardLastPlayedLabel;
+    private Label dashboardPlayTimeLabel;
+    private Label dashboardContentStatsLabel;
+    private Label dashboardGameStatusLabel;
+    private long currentSessionStartMillis = 0;
+    private StackPane appOverlay;
+    private VBox toastContainer;
 
     private static final Map<String, Image> iconMemoryCache = new ConcurrentHashMap<String, Image>();
 
@@ -436,7 +444,8 @@ public class LauncherUI extends Application {
                 @Override
                 public void run() {
                     try {
-                        final List<ModrinthClient.ModResult> results = CurseForgeClient.searchPopularProjects(apiKey, type);
+                        final List<ModrinthClient.ModResult> results =
+                                CurseForgeClient.searchPopularProjects(apiKey, type);
 
                         Platform.runLater(new Runnable() {
                             @Override
@@ -468,7 +477,50 @@ public class LauncherUI extends Application {
             return;
         }
 
-        loadPopularContent(typeBox, resultsList, searchBtn, installBtn, status);
+        // Modrinth
+        final String type = getSelectedContentType(typeBox);
+
+        resultsList.getItems().clear();
+        installBtn.setText("Instalar seleccionado");
+        installBtn.setDisable(true);
+        searchBtn.setDisable(true);
+
+        status.setText("Cargando contenido popular de Modrinth...");
+
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final List<ModrinthClient.ModResult> results =
+                            ModrinthClient.searchPopularProjects(type);
+
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            resultsList.getItems().setAll(results);
+                            searchBtn.setDisable(false);
+
+                            if (results.isEmpty()) {
+                                status.setText("No se encontraron resultados en Modrinth.");
+                            } else {
+                                status.setText("Mostrando " + results.size() + " resultados populares de Modrinth.");
+                            }
+                        }
+                    });
+                } catch (final Exception ex) {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            searchBtn.setDisable(false);
+                            status.setText("Error cargando Modrinth: " + ex.getMessage());
+                        }
+                    });
+                }
+            }
+        }, "Modrinth-Popular");
+
+        t.setDaemon(true);
+        t.start();
     }
 
     private final java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(LauncherUI.class);
@@ -495,9 +547,21 @@ public class LauncherUI extends Application {
                 e.printStackTrace(logWriter);
                 logWriter.flush();
             });
-            
+
             BorderPane root = new BorderPane();
             root.getStyleClass().add("root");
+
+            appOverlay = new StackPane();
+            appOverlay.getChildren().add(root);
+
+            toastContainer = new VBox(8);
+            toastContainer.setMouseTransparent(true);
+            toastContainer.getStyleClass().add("toast-container");
+
+            StackPane.setAlignment(toastContainer, Pos.BOTTOM_RIGHT);
+            StackPane.setMargin(toastContainer, new Insets(18));
+
+            appOverlay.getChildren().add(toastContainer);
 
             // --- LEFT PANEL (Profile & Settings) ---
             VBox leftPanel = new VBox(12);
@@ -1022,29 +1086,30 @@ public class LauncherUI extends Application {
                 }
             });
 
-// ================= HERO CARD =================
-            BorderPane heroCard = new BorderPane();
-            heroCard.getStyleClass().add("hero-card");
+// ================= HERO CARD PREMIUM =================
+            VBox heroCard = new VBox(16);
+            heroCard.getStyleClass().add("premium-hero-card");
             heroCard.setMaxWidth(Double.MAX_VALUE);
 
-            HBox heroLeft = new HBox(16);
-            heroLeft.setAlignment(Pos.CENTER_LEFT);
+            HBox heroTop = new HBox(16);
+            heroTop.setAlignment(Pos.CENTER_LEFT);
 
             heroInstanceIconLabel = new Label("🌱");
-            heroInstanceIconLabel.getStyleClass().add("hero-icon");
+            heroInstanceIconLabel.getStyleClass().add("premium-hero-icon");
 
             VBox heroTextBox = new VBox(5);
+            HBox.setHgrow(heroTextBox, Priority.ALWAYS);
 
             Label heroSmallTitle = new Label("Instancia actual");
             heroSmallTitle.getStyleClass().add("hero-small-title");
 
             heroInstanceNameLabel = new Label("Principal");
-            heroInstanceNameLabel.getStyleClass().add("hero-title");
+            heroInstanceNameLabel.getStyleClass().add("premium-hero-title");
 
             heroInstanceMetaLabel = new Label("Sin versión · 2 GB RAM");
-            heroInstanceMetaLabel.getStyleClass().add("hero-meta");
+            heroInstanceMetaLabel.getStyleClass().add("premium-hero-meta");
 
-            heroInstanceModsLabel = new Label("0 mods");
+            heroInstanceModsLabel = new Label("0 mods activos");
             heroInstanceModsLabel.getStyleClass().add("hero-pill");
 
             heroUserLabel = new Label("Usuario: Steve");
@@ -1058,12 +1123,10 @@ public class LauncherUI extends Application {
                     heroUserLabel
             );
 
-            heroLeft.getChildren().addAll(heroInstanceIconLabel, heroTextBox);
-
             Button playButton = new Button("Jugar");
-            playButton.getStyleClass().add("hero-play-button");
-            playButton.setPrefWidth(170);
-            playButton.setPrefHeight(56);
+            playButton.getStyleClass().add("premium-play-button");
+            playButton.setPrefWidth(130);
+            playButton.setPrefHeight(46);
             playButton.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
                 public void handle(ActionEvent event) {
@@ -1071,9 +1134,32 @@ public class LauncherUI extends Application {
                 }
             });
 
-            heroCard.setLeft(heroLeft);
-            heroCard.setRight(playButton);
-            BorderPane.setAlignment(playButton, Pos.CENTER_RIGHT);
+            heroTop.getChildren().addAll(heroInstanceIconLabel, heroTextBox, playButton);
+
+// Stats row
+            HBox statsRow = new HBox(12);
+            statsRow.setAlignment(Pos.CENTER_LEFT);
+
+            VBox statusStat = createDashboardStatCard("Estado", "Listo");
+            dashboardGameStatusLabel = (Label) statusStat.getChildren().get(1);
+
+            VBox lastPlayedStat = createDashboardStatCard("Última vez", "Nunca");
+            dashboardLastPlayedLabel = (Label) lastPlayedStat.getChildren().get(1);
+
+            VBox playTimeStat = createDashboardStatCard("Tiempo jugado", "0 min");
+            dashboardPlayTimeLabel = (Label) playTimeStat.getChildren().get(1);
+
+            VBox contentStat = createDashboardStatCard("Contenido", "0 mods · 0 shaders · 0 texturas");
+            dashboardContentStatsLabel = (Label) contentStat.getChildren().get(1);
+
+            HBox.setHgrow(statusStat, Priority.ALWAYS);
+            HBox.setHgrow(lastPlayedStat, Priority.ALWAYS);
+            HBox.setHgrow(playTimeStat, Priority.ALWAYS);
+            HBox.setHgrow(contentStat, Priority.ALWAYS);
+
+            statsRow.getChildren().addAll(statusStat, lastPlayedStat, playTimeStat, contentStat);
+
+            heroCard.getChildren().addAll(heroTop, statsRow);
 
 // ================= VERSION CARD =================
             VBox versionCard = new VBox(12);
@@ -1131,22 +1217,15 @@ public class LauncherUI extends Application {
 
             statusCard.getChildren().addAll(statusTitle, statusLabel, progressBar);
 
-// ================= QUICK ACTIONS CARD =================
-            HBox quickActions = new HBox(10);
+// ================= MINIMAL QUICK ACTIONS =================
+            HBox quickActions = new HBox(8);
             quickActions.setAlignment(Pos.CENTER_LEFT);
-            quickActions.getStyleClass().add("quick-actions-bar");
+            quickActions.getStyleClass().add("minimal-actions-bar");
 
-            Button quickModsBtn = new Button("Mods");
-            quickModsBtn.getStyleClass().add("quick-action-button");
-
-            Button quickSearchBtn = new Button("Buscar contenido");
-            quickSearchBtn.getStyleClass().add("quick-action-button");
-
-            Button quickGraphicsBtn = new Button("Pack gráfico");
-            quickGraphicsBtn.getStyleClass().add("quick-action-button");
-
-            Button quickEditBtn = new Button("Editar instancia");
-            quickEditBtn.getStyleClass().add("quick-action-button");
+            Button quickModsBtn = createMinimalActionButton("Mods");
+            Button quickSearchBtn = createMinimalActionButton("Mercado");
+            Button quickGraphicsBtn = createMinimalActionButton("Gráficos");
+            Button quickEditBtn = createMinimalActionButton("Instancia");
 
             quickModsBtn.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
@@ -1202,8 +1281,6 @@ public class LauncherUI extends Application {
                     topBar,
                     heroCard,
                     versionCard,
-                    statusCard,
-                    quickActions,
                     consolePane
             );
             ScrollPane leftScroll = new ScrollPane(leftPanel);
@@ -1219,7 +1296,7 @@ public class LauncherUI extends Application {
             root.setCenter(rightPanel);
 
         // Scene
-        Scene scene = new Scene(root, 900, 600);
+            Scene scene = new Scene(appOverlay, 680, 720);
         try {
             scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         } catch (Exception e) {
@@ -1227,7 +1304,7 @@ public class LauncherUI extends Application {
         }
 
         stage.setScene(scene);
-            stage.setTitle("Minecraft Launcher");
+            stage.setTitle("Echo Launcher");
             stage.setMinWidth(980);
             stage.setMinHeight(620);
         stage.show();
@@ -1279,10 +1356,25 @@ public class LauncherUI extends Application {
             loadVersions();
         } catch (Exception e) {
             e.printStackTrace();
+
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error de inicio");
             alert.setHeaderText("Error al iniciar el launcher");
             alert.setContentText(e.getMessage());
+
+            TextArea area = new TextArea(sw.toString());
+            area.setEditable(false);
+            area.setWrapText(false);
+            area.setPrefWidth(900);
+            area.setPrefHeight(500);
+
+            alert.getDialogPane().setExpandableContent(area);
+            alert.getDialogPane().setExpanded(true);
+
             alert.showAndWait();
             System.exit(1);
         }
@@ -1750,7 +1842,7 @@ public class LauncherUI extends Application {
 
         root.setTop(header);
         root.setCenter(scroll);
-        Scene scene = new Scene(root, 1100, 680);
+        Scene scene = new Scene(appOverlay, 1100, 680);
 
         try {
             scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
@@ -2579,6 +2671,9 @@ public class LauncherUI extends Application {
         if (topInstanceBtn != null) {
             topInstanceBtn.setText(instance.name == null ? "Instancia" : instance.name);
         }
+
+        updateDashboardStats(instance);
+
     }
 
     private Instance getCurrentInstance() {
@@ -4747,15 +4842,8 @@ public class LauncherUI extends Application {
                 }
 
                 searchField.clear();
-
-                if (curseForge && !hasCurseForgeApiKey()) {
-                    resultsList.getItems().clear();
-                    installBtn.setText("Instalar seleccionado");
-                    installBtn.setDisable(true);
-                    searchBtn.setDisable(false);
-                    status.setText("CurseForge seleccionado. Configura tu API Key para habilitar búsquedas.");
-                    return;
-                }
+                installBtn.setText("Instalar seleccionado");
+                installBtn.setDisable(true);
 
                 loadProviderPopularContent(providerBox, typeBox, resultsList, searchBtn, installBtn, status);
             }
@@ -4772,10 +4860,10 @@ public class LauncherUI extends Application {
                     return;
                 }
 
-                if (isContentInstalled(selected.projectId, selected.projectType)) {
+                if (isContentInstalled(selected.projectId, selected.projectType) || isLogicalContentInstalled(selected)) {
                     installBtn.setText("Ya instalado");
                     installBtn.setDisable(true);
-                    status.setText("Este contenido ya está instalado.");
+                    status.setText("Este contenido o un equivalente ya está instalado.");
                     return;
                 }
 
@@ -4826,6 +4914,7 @@ public class LauncherUI extends Application {
                                         installBtn.setText("Ya instalado");
                                         installBtn.setDisable(true);
                                         status.setText("Instalado desde CurseForge: " + installedFile.getName());
+                                        showToast("Instalado: " + installedFile.getName(), "success");
                                         downloadProgressBar.setVisible(false);
                                         downloadProgressBar.setProgress(0);
                                     }
@@ -4839,6 +4928,9 @@ public class LauncherUI extends Application {
                                         installBtn.setDisable(false);
                                         status.setText("Error instalando desde CurseForge: " + ex.getMessage());
                                         ex.printStackTrace();
+                                        downloadProgressBar.setVisible(false);
+                                        downloadProgressBar.setProgress(0);
+                                        showToast("Error instalando contenido", "error");
                                         downloadProgressBar.setVisible(false);
                                         downloadProgressBar.setProgress(0);
                                     }
@@ -4874,6 +4966,7 @@ public class LauncherUI extends Application {
                                     installBtn.setText("Ya instalado");
                                     installBtn.setDisable(true);
                                     status.setText("Instalado correctamente junto con sus dependencias: " + installedFile.getName());
+                                    showToast("Instalado: " + installedFile.getName(), "success");
                                     downloadProgressBar.setVisible(false);
                                     downloadProgressBar.setProgress(0);
                                 }
@@ -5632,8 +5725,6 @@ public class LauncherUI extends Application {
         );
 
         markContentInstalled(projectId, type, selected.title, targetFile);
-        markLogicalContentInstalled(selected, targetFile);
-
         markLogicalContentInstalled(selected, targetFile);
 
         installing.remove(projectId);
@@ -7115,10 +7206,6 @@ public class LauncherUI extends Application {
         return versionId;
     }
 
-    private void showModDownloaderDialog() {
-        showModDownloaderDialog(false);
-    }
-
     private VBox createToolCard(String titleText, String descriptionText, String iconText) {
         VBox card = new VBox(6);
         card.getStyleClass().add("tool-card");
@@ -7141,495 +7228,6 @@ public class LauncherUI extends Application {
         return card;
     }
 
-    private void showModDownloaderDialog(final boolean openInstalledTab) {
-        final Stage dialog = new Stage();
-        dialog.setTitle("Gestor de Mods");
-        dialog.initModality(Modality.APPLICATION_MODAL);
-
-        BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #f6f8fb;");
-
-        VBox header = new VBox(6);
-        header.setPadding(new Insets(22, 24, 14, 24));
-
-        Label title = new Label("Gestor de Mods");
-        title.setStyle("-fx-font-size: 26px; -fx-font-weight: 800; -fx-text-fill: #111827;");
-
-        String selectedVersion = "ninguna";
-        if (versionBox.getValue() != null) {
-            selectedVersion = extractMinecraftVersionForMods(versionBox.getValue().id);
-        }
-
-        Label subtitle = new Label("Busca, instala y administra mods para Minecraft " + selectedVersion + ".");
-        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
-        subtitle.setWrapText(true);
-
-        header.getChildren().addAll(title, subtitle);
-
-        TabPane tabs = new TabPane();
-        tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-        tabs.setStyle("-fx-background-color: transparent;");
-
-        /*
-         * TAB BUSCAR MODS
-         */
-        VBox searchRoot = new VBox(14);
-        searchRoot.setPadding(new Insets(18));
-        searchRoot.setStyle("-fx-background-color: #f6f8fb;");
-
-        HBox searchBox = new HBox(10);
-        searchBox.setAlignment(Pos.CENTER_LEFT);
-
-        final TextField searchField = new TextField();
-        searchField.setPromptText("Buscar mods en Modrinth, ej. sodium, iris, xaero...");
-        searchField.getStyleClass().add("text-field");
-        HBox.setHgrow(searchField, Priority.ALWAYS);
-
-        final Button searchBtn = new Button("Buscar");
-        searchBtn.getStyleClass().add("button");
-
-        searchBox.getChildren().addAll(searchField, searchBtn);
-
-        final ListView<ModrinthClient.ModResult> resultsList = new ListView<ModrinthClient.ModResult>();
-        resultsList.getStyleClass().add("list-view");
-        VBox.setVgrow(resultsList, Priority.ALWAYS);
-
-        resultsList.setCellFactory(new javafx.util.Callback<ListView<ModrinthClient.ModResult>, ListCell<ModrinthClient.ModResult>>() {
-            @Override
-            public ListCell<ModrinthClient.ModResult> call(ListView<ModrinthClient.ModResult> listView) {
-                return new ListCell<ModrinthClient.ModResult>() {
-                    @Override
-                    protected void updateItem(ModrinthClient.ModResult item, boolean empty) {
-                        super.updateItem(item, empty);
-
-                        if (empty || item == null) {
-                            setText(null);
-                            setGraphic(null);
-                            return;
-                        }
-
-                        VBox card = new VBox(6);
-                        card.setPadding(new Insets(10));
-                        card.setStyle(
-                                "-fx-background-color: transparent;" +
-                                        "-fx-background-radius: 14px;"
-                        );
-
-                        HBox top = new HBox(8);
-                        top.setAlignment(Pos.CENTER_LEFT);
-
-                        Label nameLabel = new Label(item.title);
-                        nameLabel.setStyle(
-                                "-fx-font-size: 15px;" +
-                                        "-fx-font-weight: 800;" +
-                                        "-fx-text-fill: #111827;"
-                        );
-
-                        Label slugLabel = new Label(item.slug);
-                        slugLabel.setStyle(
-                                "-fx-font-size: 11px;" +
-                                        "-fx-font-weight: 700;" +
-                                        "-fx-text-fill: #1d4ed8;" +
-                                        "-fx-background-color: #dbeafe;" +
-                                        "-fx-background-radius: 999px;" +
-                                        "-fx-padding: 4px 8px;"
-                        );
-
-                        top.getChildren().addAll(nameLabel, slugLabel);
-
-                        Label descLabel = new Label(item.description == null ? "" : item.description);
-                        descLabel.setWrapText(true);
-                        descLabel.setMaxWidth(610);
-                        descLabel.setStyle(
-                                "-fx-font-size: 12px;" +
-                                        "-fx-text-fill: #6b7280;"
-                        );
-
-                        Label idLabel = new Label("Project ID: " + item.projectId);
-                        idLabel.setStyle(
-                                "-fx-font-size: 11px;" +
-                                        "-fx-text-fill: #9ca3af;"
-                        );
-
-                        card.getChildren().addAll(top, descLabel, idLabel);
-
-                        setText(null);
-                        setGraphic(card);
-                    }
-                };
-            }
-        });
-
-        HBox actionBar = new HBox(10);
-        actionBar.setAlignment(Pos.CENTER_LEFT);
-
-        final Button installBtn = new Button("Instalar seleccionado");
-        installBtn.getStyleClass().add("launch-button");
-        installBtn.setDisable(true);
-
-        final Button openModsBtn = new Button("Abrir carpeta mods");
-        openModsBtn.getStyleClass().add("secondary-button");
-
-        final Label searchStatus = new Label("Busca un mod para empezar.");
-        searchStatus.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
-        searchStatus.setWrapText(true);
-
-        Region actionSpacer = new Region();
-        HBox.setHgrow(actionSpacer, Priority.ALWAYS);
-
-        actionBar.getChildren().addAll(installBtn, openModsBtn, actionSpacer);
-
-        VBox searchBottom = new VBox(8);
-        searchBottom.getChildren().addAll(searchStatus, actionBar);
-
-        searchRoot.getChildren().addAll(searchBox, resultsList, searchBottom);
-
-        /*
-         * TAB INSTALADOS
-         */
-        VBox installedRoot = new VBox(14);
-        installedRoot.setPadding(new Insets(18));
-        installedRoot.setStyle("-fx-background-color: #f6f8fb;");
-
-        HBox installedTop = new HBox(10);
-        installedTop.setAlignment(Pos.CENTER_LEFT);
-
-        Label installedTitle = new Label("Mods instalados");
-        installedTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 800; -fx-text-fill: #111827;");
-
-        Region installedSpacer = new Region();
-        HBox.setHgrow(installedSpacer, Priority.ALWAYS);
-
-        final Button refreshInstalledBtn = new Button("Actualizar");
-        refreshInstalledBtn.getStyleClass().add("secondary-button");
-
-        final Button deleteModBtn = new Button("Eliminar");
-        deleteModBtn.getStyleClass().add("secondary-button");
-        deleteModBtn.setDisable(true);
-
-        installedTop.getChildren().addAll(installedTitle, installedSpacer, refreshInstalledBtn, deleteModBtn);
-
-        final ListView<File> installedList = new ListView<File>();
-        installedList.getStyleClass().add("list-view");
-        VBox.setVgrow(installedList, Priority.ALWAYS);
-
-        installedList.setCellFactory(new javafx.util.Callback<ListView<File>, ListCell<File>>() {
-            @Override
-            public ListCell<File> call(ListView<File> listView) {
-                return new ListCell<File>() {
-                    @Override
-                    protected void updateItem(File item, boolean empty) {
-                        super.updateItem(item, empty);
-
-                        if (empty || item == null) {
-                            setText(null);
-                            setGraphic(null);
-                            return;
-                        }
-
-                        HBox row = new HBox(12);
-                        row.setAlignment(Pos.CENTER_LEFT);
-                        row.setPadding(new Insets(10));
-
-                        StackPane iconBox = new StackPane();
-                        iconBox.getStyleClass().add("content-icon-box");
-                        iconBox.setMinSize(54, 54);
-                        iconBox.setPrefSize(54, 54);
-                        iconBox.setMaxSize(54, 54);
-
-                        Label fileIcon = new Label(item.getName().toLowerCase().endsWith(".disabled") ? "⏸" : "📦");
-                        fileIcon.getStyleClass().add("content-icon-fallback");
-                        iconBox.getChildren().add(fileIcon);
-
-                        VBox infoBox = new VBox(6);
-                        HBox.setHgrow(infoBox, Priority.ALWAYS);
-
-                        HBox top = new HBox(8);
-                        top.setAlignment(Pos.CENTER_LEFT);
-
-                        Label fileName = new Label(item.getName());
-                        fileName.setStyle(
-                                "-fx-font-size: 14px;" +
-                                        "-fx-font-weight: 800;" +
-                                        "-fx-text-fill: #111827;"
-                        );
-
-                        Region spacer = new Region();
-                        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-                        Label stateBadge = new Label(item.getName().toLowerCase().endsWith(".disabled") ? "Desactivado" : "Activo");
-
-                        if (item.getName().toLowerCase().endsWith(".disabled")) {
-                            stateBadge.setStyle(
-                                    "-fx-font-size: 11px;" +
-                                            "-fx-font-weight: 800;" +
-                                            "-fx-text-fill: #92400e;" +
-                                            "-fx-background-color: #fef3c7;" +
-                                            "-fx-background-radius: 999px;" +
-                                            "-fx-padding: 4px 8px;"
-                            );
-                        } else {
-                            stateBadge.setStyle(
-                                    "-fx-font-size: 11px;" +
-                                            "-fx-font-weight: 800;" +
-                                            "-fx-text-fill: #166534;" +
-                                            "-fx-background-color: #dcfce7;" +
-                                            "-fx-background-radius: 999px;" +
-                                            "-fx-padding: 4px 8px;"
-                            );
-                        }
-
-                        top.getChildren().addAll(fileName, spacer, stateBadge);
-
-                        Label meta = new Label(formatFileSize(item.length()) + " · " + item.getAbsolutePath());
-                        meta.setStyle(
-                                "-fx-font-size: 11px;" +
-                                        "-fx-text-fill: #6b7280;"
-                        );
-                        meta.setWrapText(true);
-
-                        infoBox.getChildren().addAll(top, meta);
-                        row.getChildren().addAll(iconBox, infoBox);
-
-                        setText(null);
-                        setGraphic(row);
-                    }
-                };
-            }
-        });
-
-        final Label installedStatus = new Label("Mods cargados desde la carpeta mods.");
-        installedStatus.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
-        installedStatus.setWrapText(true);
-
-        installedRoot.getChildren().addAll(installedTop, installedList, installedStatus);
-
-        Tab searchTab = new Tab("Buscar");
-        searchTab.setContent(searchRoot);
-
-        Tab installedTab = new Tab("Instalados");
-        installedTab.setContent(installedRoot);
-
-        tabs.getTabs().addAll(searchTab, installedTab);
-
-        root.setTop(header);
-        root.setCenter(tabs);
-
-        /*
-         * EVENTOS
-         */
-        resultsList.getSelectionModel().selectedItemProperty().addListener(
-                new ChangeListener<ModrinthClient.ModResult>() {
-                    @Override
-                    public void changed(ObservableValue<? extends ModrinthClient.ModResult> observable,
-                                        ModrinthClient.ModResult oldValue,
-                                        ModrinthClient.ModResult newValue) {
-                        updateInstallButtonState(newValue, installBtn, searchStatus);
-                    }
-                }
-        );
-
-        installedList.getSelectionModel().selectedItemProperty().addListener(
-                new ChangeListener<File>() {
-                    @Override
-                    public void changed(ObservableValue<? extends File> observable, File oldValue, File newValue) {
-                        deleteModBtn.setDisable(newValue == null);
-                    }
-                }
-        );
-
-        EventHandler<ActionEvent> doSearch = new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                final String query = searchField.getText() == null ? "" : searchField.getText().trim();
-
-                if (query.isEmpty()) {
-                    searchStatus.setText("Escribe el nombre de un mod.");
-                    return;
-                }
-
-                searchBtn.setDisable(true);
-                installBtn.setDisable(true);
-                resultsList.getItems().clear();
-                searchStatus.setText("Buscando \"" + query + "\" en Modrinth...");
-
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            final List<ModrinthClient.ModResult> results = ModrinthClient.searchMods(query);
-
-                            Platform.runLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    resultsList.getItems().setAll(results);
-                                    searchBtn.setDisable(false);
-
-                                    if (results.isEmpty()) {
-                                        searchStatus.setText("No se encontraron resultados.");
-                                    } else {
-                                        searchStatus.setText("Se encontraron " + results.size() + " resultados.");
-                                    }
-                                }
-                            });
-                        } catch (final Exception ex) {
-                            Platform.runLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    searchBtn.setDisable(false);
-                                    searchStatus.setText("Error buscando mods: " + ex.getMessage());
-                                }
-                            });
-                        }
-                    }
-                }, "Modrinth-Search");
-
-                t.setDaemon(true);
-                t.start();
-            }
-        };
-
-        searchBtn.setOnAction(doSearch);
-        searchField.setOnAction(doSearch);
-
-        installBtn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                final ModrinthClient.ModResult selected = resultsList.getSelectionModel().getSelectedItem();
-
-                if (selected == null) {
-                    return;
-                }
-
-                if (isModrinthProjectInstalled(selected.projectId)) {
-                    installBtn.setText("Ya instalado");
-                    installBtn.setDisable(true);
-                    searchStatus.setText("Este mod ya está instalado.");
-                    return;
-                }
-
-                final String mcVersion = getCurrentMinecraftVersionForMods();
-
-                installBtn.setDisable(true);
-                searchBtn.setDisable(true);
-                searchStatus.setText("Preparando instalación de " + selected.title + " para Minecraft " + mcVersion + "...");
-
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            final File installedFile = installModFromModrinth(selected, mcVersion);
-
-                            Platform.runLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    installBtn.setText("Ya instalado");
-                                    installBtn.setDisable(true);
-                                    searchBtn.setDisable(false);
-
-                                    searchStatus.setText("Instalado correctamente: " + installedFile.getName());
-
-                                    refreshInstalledMods(installedList, installedStatus);
-                                    tabs.getSelectionModel().select(installedTab);
-                                }
-                            });
-
-                        } catch (final Exception ex) {
-                            Platform.runLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    searchBtn.setDisable(false);
-
-                                    String msg = ex.getMessage() == null ? "Error desconocido" : ex.getMessage();
-
-                                    if (msg.toLowerCase().contains("ya está instalado")) {
-                                        installBtn.setText("Ya instalado");
-                                        installBtn.setDisable(true);
-                                        searchStatus.setText(msg);
-                                    } else {
-                                        installBtn.setText("Instalar seleccionado");
-                                        installBtn.setDisable(false);
-                                        searchStatus.setText("Error instalando mod: " + msg);
-                                    }
-                                }
-                            });
-                        }
-                    }
-                }, "Modrinth-Install");
-
-                t.setDaemon(true);
-                t.start();
-            }
-        });
-
-        openModsBtn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                try {
-                    File modsDir = getModsDirectory();
-                    modsDir.mkdirs();
-
-                    if (Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().open(modsDir);
-                    }
-                } catch (Exception ex) {
-                    searchStatus.setText("No se pudo abrir la carpeta mods: " + ex.getMessage());
-                }
-            }
-        });
-
-        refreshInstalledBtn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                refreshInstalledMods(installedList, installedStatus);
-            }
-        });
-
-        deleteModBtn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                final File selected = installedList.getSelectionModel().getSelectedItem();
-
-                if (selected == null) {
-                    return;
-                }
-
-                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-                confirm.setTitle("Eliminar mod");
-                confirm.setHeaderText("¿Eliminar este mod?");
-                confirm.setContentText(selected.getName());
-
-                java.util.Optional<ButtonType> result = confirm.showAndWait();
-
-                if (result.isPresent() && result.get() == ButtonType.OK) {
-                    boolean deleted = selected.delete();
-
-                    if (deleted) {
-                        removeMarkersForModFile(selected);
-                        installedStatus.setText("Mod eliminado: " + selected.getName());
-                    } else {
-                        installedStatus.setText("No se pudo eliminar: " + selected.getName());
-                    }
-
-                    refreshInstalledMods(installedList, installedStatus);
-                }
-            }
-        });
-
-        refreshInstalledMods(installedList, installedStatus);
-
-        Scene scene = new Scene(root, 760, 620);
-
-        try {
-            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-        } catch (Exception ignored) {
-        }
-
-        dialog.setScene(scene);
-        dialog.setMinWidth(700);
-        dialog.setMinHeight(560);
-        dialog.show();
-    }
 
     private File installModFromModrinth(ModrinthClient.ModResult selected, String mcVersion) throws Exception {
         if (selected == null) {
@@ -8730,6 +8328,21 @@ public class LauncherUI extends Application {
 
         final File gameDir = getCurrentInstanceGameDir();
 
+        final Instance launchInstance = getCurrentInstance();
+
+        if (launchInstance != null) {
+            launchInstance.lastPlayedAt = System.currentTimeMillis();
+            currentSessionStartMillis = System.currentTimeMillis();
+
+            try {
+                InstanceManager.saveInstance(launchInstance);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
+            updateDashboardStats(launchInstance);
+        }
+
         System.out.println("[LAUNCHER-DEBUG] Preparando lanzamiento:");
         System.out.println("[LAUNCHER-DEBUG] Versión: " + entry.id);
         System.out.println("[LAUNCHER-DEBUG] Usuario: " + username);
@@ -8752,24 +8365,53 @@ public class LauncherUI extends Application {
             @Override
             public void handle(WorkerStateEvent event) {
                 statusLabel.setText("✅ Juego en ejecución.");
+                showToast("Juego en ejecución", "success");
                 progressBar.setVisible(false);
+
+                if (dashboardGameStatusLabel != null) {
+                    dashboardGameStatusLabel.setText("En ejecución");
+                }
+
+                Instance instance = getCurrentInstance();
+
+                if (instance != null) {
+                    if (instance.totalPlayTimeSeconds < 0) {
+                        instance.totalPlayTimeSeconds = 0;
+                    }
+
+                    // Sesión mínima registrada. Luego se puede mejorar con watcher real.
+                    instance.totalPlayTimeSeconds += 60;
+
+                    try {
+                        InstanceManager.saveInstance(instance);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
+                    updateDashboardStats(instance);
+                }
             }
         });
 
         task.setOnFailed(new EventHandler<WorkerStateEvent>() {
             @Override
             public void handle(WorkerStateEvent event) {
-                progressBar.setVisible(false);
 
+                if (dashboardGameStatusLabel != null) {
+                    dashboardGameStatusLabel.setText("Error");
+                }
+                progressBar.setVisible(false);
                 Throwable ex = task.getException();
 
                 if (ex instanceof CrashAnalyzer.CrashException) {
                     CrashAnalyzer.CrashException crash = (CrashAnalyzer.CrashException) ex;
                     showCrashDialog(crash);
                     statusLabel.setText("❌ Minecraft crasheó: " + crash.getCrashInfo().title);
+                    showToast("Minecraft Crasheo", "error");
                 } else {
                     String msg = ex == null || ex.getMessage() == null ? "Error desconocido" : ex.getMessage();
                     statusLabel.setText("❌ Error iniciando Minecraft: " + msg);
+                    showToast("Error iniciando Minecraft", "error");
 
                     if (ex != null) {
                         ex.printStackTrace();
@@ -9295,6 +8937,23 @@ public class LauncherUI extends Application {
         System.out.println("[AutoFix] Instalado: " + target.getName());
     }
 
+    private VBox createDashboardStatCard(String title, String value) {
+        VBox card = new VBox(4);
+        card.getStyleClass().add("dashboard-stat-card");
+        card.setMaxWidth(Double.MAX_VALUE);
+
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("dashboard-stat-title");
+
+        Label valueLabel = new Label(value);
+        valueLabel.getStyleClass().add("dashboard-stat-value");
+        valueLabel.setWrapText(true);
+
+        card.getChildren().addAll(titleLabel, valueLabel);
+
+        return card;
+    }
+
     private boolean hasActiveModInCurrentInstance(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return false;
@@ -9472,6 +9131,108 @@ public class LauncherUI extends Application {
                 installFabricWithLoader(version, selected.version, fabricBtn);
             }
         });
+    }
+
+    private void updateDashboardStats(Instance instance) {
+        if (instance == null) {
+            return;
+        }
+
+        if (dashboardLastPlayedLabel != null) {
+            dashboardLastPlayedLabel.setText(formatLastPlayed(instance.lastPlayedAt));
+        }
+
+        if (dashboardPlayTimeLabel != null) {
+            dashboardPlayTimeLabel.setText(formatPlayTime(instance.totalPlayTimeSeconds));
+        }
+
+        if (dashboardContentStatsLabel != null) {
+            dashboardContentStatsLabel.setText(getContentStatsForInstance(instance));
+        }
+
+        if (dashboardGameStatusLabel != null) {
+            dashboardGameStatusLabel.setText("Listo");
+        }
+    }
+
+    private String formatLastPlayed(long millis) {
+        if (millis <= 0) {
+            return "Nunca";
+        }
+
+        try {
+            java.time.Instant instant = java.time.Instant.ofEpochMilli(millis);
+            java.time.LocalDateTime date = java.time.LocalDateTime.ofInstant(
+                    instant,
+                    java.time.ZoneId.systemDefault()
+            );
+
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDate playedDate = date.toLocalDate();
+
+            if (playedDate.equals(today)) {
+                return "Hoy " + String.format("%02d:%02d", date.getHour(), date.getMinute());
+            }
+
+            if (playedDate.equals(today.minusDays(1))) {
+                return "Ayer " + String.format("%02d:%02d", date.getHour(), date.getMinute());
+            }
+
+            return String.format(
+                    "%02d/%02d/%04d",
+                    playedDate.getDayOfMonth(),
+                    playedDate.getMonthValue(),
+                    playedDate.getYear()
+            );
+        } catch (Exception ex) {
+            return "Desconocido";
+        }
+    }
+
+    private String formatPlayTime(long seconds) {
+        if (seconds <= 0) {
+            return "0 min";
+        }
+
+        long minutes = seconds / 60;
+
+        if (minutes < 60) {
+            return minutes + " min";
+        }
+
+        long hours = minutes / 60;
+        long remainingMinutes = minutes % 60;
+
+        if (remainingMinutes == 0) {
+            return hours + " h";
+        }
+
+        return hours + " h " + remainingMinutes + " min";
+    }
+
+    private String getContentStatsForInstance(Instance instance) {
+        File gameDir = InstanceManager.getGameDir(instance);
+
+        int mods = countFiles(new File(gameDir, "mods"), ".jar");
+        int shaders = countFiles(new File(gameDir, "shaderpacks"), ".zip");
+        int resourcepacks = countFiles(new File(gameDir, "resourcepacks"), ".zip");
+
+        return mods + " mods · " + shaders + " shaders · " + resourcepacks + " texturas";
+    }
+
+    private int countFiles(File dir, final String extension) {
+        if (dir == null || !dir.exists()) {
+            return 0;
+        }
+
+        File[] files = dir.listFiles(new java.io.FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(extension);
+            }
+        });
+
+        return files == null ? 0 : files.length;
     }
 
     private void installFabricWithLoader(final VersionEntry v,
@@ -9663,6 +9424,14 @@ public class LauncherUI extends Application {
         return result.get();
     }
 
+    private Button createPremiumActionButton(String title, String subtitle, String icon) {
+        Button btn = new Button(icon + "  " + title + "\n" + subtitle);
+        btn.getStyleClass().add("premium-action-button");
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setPrefHeight(76);
+        return btn;
+    }
+
     private String formatVersionFileLabel(ModrinthClient.ModVersionFile file) {
         if (file == null) {
             return "";
@@ -9673,6 +9442,51 @@ public class LauncherUI extends Application {
                 : file.versionId;
 
         return versionName + " · " + file.filename;
+    }
+
+    private Button createMinimalActionButton(String text) {
+        Button btn = new Button(text);
+        btn.getStyleClass().add("minimal-action-button");
+        return btn;
+    }
+
+    private void showToast(String message, String type) {
+        if (toastContainer == null) {
+            if (statusLabel != null) {
+                statusLabel.setText(message);
+            }
+            return;
+        }
+
+        final Label toast = new Label(message);
+        toast.getStyleClass().add("toast");
+
+        if ("success".equalsIgnoreCase(type)) {
+            toast.getStyleClass().add("toast-success");
+        } else if ("error".equalsIgnoreCase(type)) {
+            toast.getStyleClass().add("toast-error");
+        } else if ("warning".equalsIgnoreCase(type)) {
+            toast.getStyleClass().add("toast-warning");
+        } else {
+            toast.getStyleClass().add("toast-info");
+        }
+
+        toast.setWrapText(true);
+        toast.setMaxWidth(360);
+
+        toastContainer.getChildren().add(toast);
+
+        javafx.animation.PauseTransition delay =
+                new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3.5));
+
+        delay.setOnFinished(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                toastContainer.getChildren().remove(toast);
+            }
+        });
+
+        delay.play();
     }
 
     private File installSelectedContentFile(ModrinthClient.ModResult selected,
