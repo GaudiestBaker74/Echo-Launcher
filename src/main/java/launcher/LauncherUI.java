@@ -90,6 +90,7 @@ public class LauncherUI extends Application {
     private long currentSessionStartMillis = 0;
     private StackPane appOverlay;
     private VBox toastContainer;
+    private StackPane dropOverlay;
 
     private static final Map<String, Image> iconMemoryCache = new ConcurrentHashMap<String, Image>();
 
@@ -563,6 +564,18 @@ public class LauncherUI extends Application {
             StackPane.setMargin(toastContainer, new Insets(18));
 
             appOverlay.getChildren().add(toastContainer);
+
+            dropOverlay = new StackPane();
+            dropOverlay.getStyleClass().add("drop-overlay");
+            dropOverlay.setVisible(false);
+            dropOverlay.setMouseTransparent(true);
+
+            Label dropLabel = new Label("Suelta el modpack para importarlo");
+            dropLabel.getStyleClass().add("drop-overlay-label");
+
+            dropOverlay.getChildren().add(dropLabel);
+
+            appOverlay.getChildren().add(dropOverlay);
 
             // --- LEFT PANEL (Profile & Settings) ---
             VBox leftPanel = new VBox(12);
@@ -1298,6 +1311,7 @@ public class LauncherUI extends Application {
 
         // Scene
             Scene scene = new Scene(appOverlay, 680, 720);
+            setupModpackDragAndDrop(scene);
         try {
             scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         } catch (Exception e) {
@@ -2993,6 +3007,10 @@ public class LauncherUI extends Application {
             return "Shaders";
         }
 
+        if ("modpack".equalsIgnoreCase(type)) {
+            return "Modpacks";
+        }
+
         return "Mods";
     }
 
@@ -4685,7 +4703,7 @@ public class LauncherUI extends Application {
         final ComboBox<ContentProviderOption> providerBox = createProviderComboBox();
 
         final ComboBox<String> typeBox = new ComboBox<String>();
-        typeBox.getItems().addAll("Mods", "Texturas", "Shaders");
+        typeBox.getItems().addAll("Mods", "Texturas", "Shaders", "Modpacks");
         typeBox.getSelectionModel().selectFirst();
         typeBox.setPrefWidth(135);
 
@@ -5016,6 +5034,11 @@ public class LauncherUI extends Application {
 
                 if (selectedVersionFile == null) {
                     status.setText("Instalación cancelada.");
+                    return;
+                }
+
+                if ("modpack".equalsIgnoreCase(selected.projectType)) {
+                    installSelectedModpackVersion(selected, selectedVersionFile, status, downloadProgressBar);
                     return;
                 }
 
@@ -6105,6 +6128,10 @@ public class LauncherUI extends Application {
             return "shader";
         }
 
+        if ("Modpacks".equals(value)) {
+            return "modpack";
+        }
+
         return "mod";
     }
 
@@ -6115,6 +6142,10 @@ public class LauncherUI extends Application {
 
         if ("shader".equalsIgnoreCase(type)) {
             return "Shader";
+        }
+
+        if ("modpack".equalsIgnoreCase(type)) {
+            return "Modpack";
         }
 
         return "Mod";
@@ -8856,7 +8887,8 @@ public class LauncherUI extends Application {
 
         VBox root = new VBox(12);
         root.setPadding(new Insets(12));
-        root.setPrefWidth(660);
+        root.setPrefWidth(680);
+        root.setMaxWidth(680);
 
         Label intro = new Label(
                 hasError
@@ -8867,41 +8899,62 @@ public class LauncherUI extends Application {
         intro.setStyle("-fx-text-fill: #374151; -fx-font-size: 13px;");
 
         VBox issuesBox = new VBox(10);
+        issuesBox.setPadding(new Insets(4));
 
-        for (PreLaunchChecker.PreLaunchIssue issue : issues) {
-            VBox card = new VBox(6);
-            card.getStyleClass().add("namemc-card");
+        if (issues != null) {
+            for (PreLaunchChecker.PreLaunchIssue issue : issues) {
+                if (issue == null) {
+                    continue;
+                }
 
-            Label title = new Label(issue.severity + " · " + issue.title);
+                VBox card = new VBox(6);
+                card.getStyleClass().add("namemc-card");
+                card.setMaxWidth(Double.MAX_VALUE);
 
-            if ("ERROR".equalsIgnoreCase(issue.severity)) {
-                title.setStyle("-fx-font-size: 14px; -fx-font-weight: 900; -fx-text-fill: #dc2626;");
-            } else if ("WARNING".equalsIgnoreCase(issue.severity)) {
-                title.setStyle("-fx-font-size: 14px; -fx-font-weight: 900; -fx-text-fill: #d97706;");
-            } else {
-                title.setStyle("-fx-font-size: 14px; -fx-font-weight: 900; -fx-text-fill: #2563eb;");
+                Label title = new Label(issue.severity + " · " + issue.title);
+
+                if ("ERROR".equalsIgnoreCase(issue.severity)) {
+                    title.setStyle("-fx-font-size: 14px; -fx-font-weight: 900; -fx-text-fill: #dc2626;");
+                } else if ("WARNING".equalsIgnoreCase(issue.severity)) {
+                    title.setStyle("-fx-font-size: 14px; -fx-font-weight: 900; -fx-text-fill: #d97706;");
+                } else {
+                    title.setStyle("-fx-font-size: 14px; -fx-font-weight: 900; -fx-text-fill: #2563eb;");
+                }
+
+                Label desc = new Label(issue.description);
+                desc.setWrapText(true);
+                desc.setMaxWidth(610);
+                desc.setStyle("-fx-font-size: 12px; -fx-text-fill: #374151;");
+
+                Label solution = new Label("Solución: " + issue.solution);
+                solution.setWrapText(true);
+                solution.setMaxWidth(610);
+                solution.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
+
+                card.getChildren().addAll(title, desc, solution);
+                issuesBox.getChildren().add(card);
             }
-
-            Label desc = new Label(issue.description);
-            desc.setWrapText(true);
-            desc.setStyle("-fx-font-size: 12px; -fx-text-fill: #374151;");
-
-            Label solution = new Label("Solución: " + issue.solution);
-            solution.setWrapText(true);
-            solution.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
-
-            card.getChildren().addAll(title, desc, solution);
-            issuesBox.getChildren().add(card);
         }
+
+        ScrollPane issuesScroll = new ScrollPane(issuesBox);
+        issuesScroll.setFitToWidth(true);
+        issuesScroll.setPrefHeight(340);
+        issuesScroll.setMaxHeight(340);
+        issuesScroll.setMinHeight(220);
+        issuesScroll.getStyleClass().add("prelaunch-scroll");
+
+        Label countLabel = new Label("Problemas detectados: " + (issues == null ? 0 : issues.size()));
+        countLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: 800; -fx-text-fill: #6b7280;");
 
         Label repairHint = new Label(
                 "La reparación automática puede instalar mods requeridos como Fabric API, Sodium o Iris. " +
                         "Para duplicados o mods de versión incorrecta, abrirá el gestor de Mods para revisión manual."
         );
         repairHint.setWrapText(true);
+        repairHint.setMaxWidth(640);
         repairHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
-        root.getChildren().addAll(intro, issuesBox, repairHint);
+        root.getChildren().addAll(intro, countLabel, issuesScroll, repairHint);
 
         dialog.getDialogPane().setContent(root);
 
@@ -9720,6 +9773,199 @@ public class LauncherUI extends Application {
 
             showToast("Error abriendo editor de instancia", "error");
         }
+    }
+
+    private void installSelectedModpackVersion(final ModrinthClient.ModResult selected,
+                                               final ModrinthClient.ModVersionFile selectedVersionFile,
+                                               final Label status,
+                                               final ProgressBar progressBar) {
+        status.setText("Descargando modpack: " + selected.title + "...");
+        progressBar.setVisible(true);
+        progressBar.setProgress(-1);
+
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                File temp = null;
+
+                try {
+                    File tempDir = new File(getLauncherDataDir(), "tmp-modpacks");
+                    tempDir.mkdirs();
+
+                    String ext = selectedVersionFile.filename.toLowerCase().endsWith(".mrpack") ? ".mrpack" : ".zip";
+                    temp = new File(tempDir, safeModFileName(selectedVersionFile.filename));
+
+                    downloadFileWithProgress(
+                            selectedVersionFile.url,
+                            temp,
+                            status,
+                            progressBar,
+                            selected.title
+                    );
+
+                    final Instance imported = ModpackManager.importModpack(
+                            temp,
+                            getCurseForgeApiKey()
+                    );
+
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            instances.add(imported);
+                            refreshInstanceViews();
+                            selectInstance(imported);
+                            loadVersions();
+
+                            progressBar.setVisible(false);
+                            progressBar.setProgress(0);
+
+                            status.setText("✅ Modpack importado como instancia: " + imported.name);
+                            showToast("Modpack importado: " + imported.name, "success");
+                        }
+                    });
+                } catch (final Exception ex) {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressBar.setVisible(false);
+                            progressBar.setProgress(0);
+
+                            status.setText("Error importando modpack: " + ex.getMessage());
+                            showToast("Error importando modpack", "error");
+                            ex.printStackTrace();
+                        }
+                    });
+                }
+            }
+        }, "Install-Modpack");
+
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void setupModpackDragAndDrop(Scene scene) {
+        scene.setOnDragOver(new EventHandler<javafx.scene.input.DragEvent>() {
+            @Override
+            public void handle(javafx.scene.input.DragEvent event) {
+                if (event.getDragboard().hasFiles()) {
+                    for (File file : event.getDragboard().getFiles()) {
+                        String lower = file.getName().toLowerCase();
+
+                        if (lower.endsWith(".mrpack") || lower.endsWith(".zip")) {
+                            event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
+                            break;
+                        }
+                    }
+                }
+
+                event.consume();
+            }
+        });
+
+        scene.setOnDragEntered(new EventHandler<javafx.scene.input.DragEvent>() {
+            @Override
+            public void handle(javafx.scene.input.DragEvent event) {
+                if (dropOverlay != null && event.getDragboard().hasFiles()) {
+                    dropOverlay.setVisible(true);
+                }
+
+                event.consume();
+            }
+        });
+
+        scene.setOnDragExited(new EventHandler<javafx.scene.input.DragEvent>() {
+            @Override
+            public void handle(javafx.scene.input.DragEvent event) {
+                if (dropOverlay != null) {
+                    dropOverlay.setVisible(false);
+                }
+
+                event.consume();
+            }
+        });
+
+        scene.setOnDragDropped(new EventHandler<javafx.scene.input.DragEvent>() {
+            @Override
+            public void handle(javafx.scene.input.DragEvent event) {
+                boolean success = false;
+
+                if (dropOverlay != null) {
+                    dropOverlay.setVisible(false);
+                }
+
+                if (event.getDragboard().hasFiles()) {
+                    for (File file : event.getDragboard().getFiles()) {
+                        String lower = file.getName().toLowerCase();
+
+                        if (lower.endsWith(".mrpack") || lower.endsWith(".zip")) {
+                            importDroppedModpack(file);
+                            success = true;
+                            break;
+                        }
+                    }
+                }
+
+                event.setDropCompleted(success);
+                event.consume();
+            }
+        });
+    }
+
+    private void importDroppedModpack(final File file) {
+        if (file == null) {
+            return;
+        }
+
+        showToast("Importando modpack...", "info");
+        statusLabel.setText("Importando modpack: " + file.getName());
+        progressBar.setVisible(true);
+        progressBar.setProgress(-1);
+
+        Task<Instance> task = new Task<Instance>() {
+            @Override
+            protected Instance call() throws Exception {
+                return ModpackManager.importModpack(file, getCurseForgeApiKey());
+            }
+        };
+
+        task.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
+                progressBar.setVisible(false);
+
+                Instance instance = task.getValue();
+
+                instances.add(instance);
+                refreshInstanceViews();
+                selectInstance(instance);
+                loadVersions();
+
+                statusLabel.setText("✅ Modpack importado: " + instance.name);
+                showToast("Modpack importado: " + instance.name, "success");
+            }
+        });
+
+        task.setOnFailed(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
+                progressBar.setVisible(false);
+
+                Throwable ex = task.getException();
+
+                String msg = ex == null || ex.getMessage() == null ? "Error desconocido" : ex.getMessage();
+
+                statusLabel.setText("❌ Error importando modpack: " + msg);
+                showToast("Error importando modpack", "error");
+
+                if (ex != null) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        Thread t = new Thread(task, "Import-Dropped-Modpack");
+        t.setDaemon(true);
+        t.start();
     }
 
     private File installSelectedContentFile(ModrinthClient.ModResult selected,

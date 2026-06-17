@@ -36,6 +36,10 @@ public class CurseForgeClient {
             return 6552;
         }
 
+        if ("modpack".equalsIgnoreCase(projectType)) {
+            return 4471;
+        }
+
         return 6;
     }
 
@@ -239,7 +243,8 @@ public class CurseForgeClient {
             boolean extOk =
                     ("mod".equalsIgnoreCase(projectType) && fileName.endsWith(".jar")) ||
                             ("resourcepack".equalsIgnoreCase(projectType) && fileName.endsWith(".zip")) ||
-                            ("shader".equalsIgnoreCase(projectType) && fileName.endsWith(".zip"));
+                            ("shader".equalsIgnoreCase(projectType) && fileName.endsWith(".zip")) ||
+                            ("modpack".equalsIgnoreCase(projectType) && fileName.endsWith(".zip"));
 
             if (!extOk) {
                 continue;
@@ -501,6 +506,11 @@ public class CurseForgeClient {
         }
 
         return result;
+    }
+
+    public static String getFileDownloadUrl(String apiKey, String projectId, String fileId) throws Exception {
+        String numericProjectId = stripCurseForgePrefix(projectId);
+        return requestDownloadUrl(apiKey, numericProjectId, fileId);
     }
 
     private static String encode(String value) throws Exception {

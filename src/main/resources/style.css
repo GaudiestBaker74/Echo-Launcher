@@ -1222,3 +1222,66 @@
     -fx-border-width: 1px;
     -fx-text-fill: #991b1b;
 }
+
+/* =========================================================
+   Drag & Drop Modpack Overlay
+   ========================================================= */
+
+.drop-overlay {
+    -fx-background-color: rgba(37, 99, 235, 0.12);
+    -fx-border-color: #2563eb;
+    -fx-border-width: 3px;
+    -fx-border-style: dashed;
+    -fx-border-radius: 28px;
+    -fx-background-radius: 28px;
+    -fx-padding: 32px;
+}
+
+.drop-overlay-label {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 24px;
+    -fx-border-color: #bfdbfe;
+    -fx-border-width: 1px;
+    -fx-border-radius: 24px;
+    -fx-padding: 22px 30px;
+    -fx-font-size: 22px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #1d4ed8;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.18), 28, 0.25, 0, 10);
+}
+
+/* =========================================================
+   Pre-launch issues scroll
+   ========================================================= */
+
+.prelaunch-scroll {
+    -fx-background-color: transparent;
+    -fx-background-radius: 18px;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1px;
+    -fx-border-radius: 18px;
+    -fx-padding: 6px;
+}
+
+.prelaunch-scroll > .viewport {
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 18px;
+}
+
+.prelaunch-scroll .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+}
+
+.prelaunch-scroll .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+}
+
+.prelaunch-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: #cbd5e1;
+    -fx-background-radius: 999px;
+}
+
+.prelaunch-scroll .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #94a3b8;
+}

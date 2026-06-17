@@ -284,6 +284,13 @@ public class ModrinthClient {
                     selectedFile = fileObj;
                     break;
                 }
+                if ("modpack".equalsIgnoreCase(projectType) && filename.endsWith(".mrpack")) {
+                    selectedFile = fileObj;
+                    break;
+                }
+                if ("modpack".equalsIgnoreCase(projectType)) {
+                    filename = "modrinth-modpack.mrpack";
+                }
             }
         }
 
