@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/main/resources/icons/minecraft-launcher.png" alt="Echo Launcher Logo" width="120" height="120">
+<img src="public/logo.png" alt="Echo Launcher Logo" width="120" height="120">
 
 # Echo Launcher
 
@@ -39,8 +39,6 @@
 <img src="docs/screenshot.png" alt="Echo Launcher Screenshot" width="850">
 
 </div>
-
-> If the image does not appear, add a screenshot at `docs/screenshot.png` and a logo at `src/main/resources/icons/minecraft-launcher.png`.
 
 ---
 
