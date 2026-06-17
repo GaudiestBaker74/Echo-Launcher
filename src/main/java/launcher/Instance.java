@@ -10,6 +10,11 @@ public class Instance {
     public String icon;
     public String notes;
 
+    public long lastPlayedAt;
+    public long totalPlayTimeSeconds;
+
+    public String customClientJarPath;
+
     public Instance() {
     }
 
@@ -22,6 +27,7 @@ public class Instance {
         this.gameDirPath = gameDirPath;
         this.icon = "grass";
         this.notes = "";
+        this.customClientJarPath = "";
     }
 
     @Override

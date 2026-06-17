@@ -16,23 +16,19 @@ import java.util.concurrent.TimeUnit;
 
 public class MinecraftLauncher {
 
-    /*
-     * Método antiguo.
-     * Lanza usando .minecraft como gameDir.
-     */
     public static void launch(String version, String user, int ram) throws Exception {
-        launchInternal(version, user, ram, VersionManager.MC_DIR);
+        launchInternal(version, user, ram, VersionManager.MC_DIR, null);
     }
 
-    /*
-     * Método nuevo para instancias tipo Prism.
-     * Lanza usando la carpeta de la instancia como gameDir.
-     */
     public static void launch(String version, String user, int ram, File gameDir) throws Exception {
-        launchInternal(version, user, ram, gameDir);
+        launchInternal(version, user, ram, gameDir, null);
     }
 
-    private static void launchInternal(String version, String user, int ram, File gameDir) throws Exception {
+    public static void launch(String version, String user, int ram, File gameDir, File customClientJar) throws Exception {
+        launchInternal(version, user, ram, gameDir, customClientJar);
+    }
+
+    private static void launchInternal(String version, String user, int ram, File gameDir, File customClientJar) throws Exception {
         if (gameDir == null) {
             gameDir = VersionManager.MC_DIR;
         }
@@ -42,7 +38,11 @@ public class MinecraftLauncher {
         JsonObject json = VersionManager.prepareVersion(version);
         List<File> cp = VersionManager.getClasspath(version, json);
 
+        applyCustomClientJarToClasspath(cp, version, json, customClientJar);
+
         StringBuilder classpath = new StringBuilder();
+
+
 
         for (File f : cp) {
             classpath.append(f.getAbsolutePath()).append(File.pathSeparator);
@@ -529,6 +529,70 @@ public class MinecraftLauncher {
             return true;
         } catch (Exception ex) {
             return false;
+        }
+    }
+
+    private static void applyCustomClientJarToClasspath(List<File> cp,
+                                                        String version,
+                                                        JsonObject json,
+                                                        File customClientJar) {
+        if (customClientJar == null || !customClientJar.exists() || !customClientJar.isFile()) {
+            return;
+        }
+
+        System.out.println("[CustomClient] Usando cliente personalizado:");
+        System.out.println("[CustomClient] " + customClientJar.getAbsolutePath());
+
+        java.util.Set<String> removePaths = new java.util.HashSet<String>();
+
+        try {
+            File versionJar = new File(
+                    VersionManager.MC_DIR,
+                    "versions/" + version + "/" + version + ".jar"
+            );
+
+            removePaths.add(versionJar.getCanonicalPath());
+
+            if (json != null && json.has("inheritsFrom")) {
+                String parent = json.get("inheritsFrom").getAsString();
+
+                File parentJar = new File(
+                        VersionManager.MC_DIR,
+                        "versions/" + parent + "/" + parent + ".jar"
+                );
+
+                removePaths.add(parentJar.getCanonicalPath());
+            }
+
+            List<File> filtered = new ArrayList<File>();
+
+            for (File f : cp) {
+                try {
+                    String path = f.getCanonicalPath();
+
+                    if (!removePaths.contains(path)) {
+                        filtered.add(f);
+                    } else {
+                        System.out.println("[CustomClient] Reemplazando client jar: " + f.getName());
+                    }
+                } catch (Exception ex) {
+                    filtered.add(f);
+                }
+            }
+
+            cp.clear();
+
+            /*
+             * El jar personalizado va primero en el classpath.
+             */
+            cp.add(customClientJar);
+            cp.addAll(filtered);
+        } catch (Exception ex) {
+            System.err.println("[CustomClient] No se pudo ajustar classpath: " + ex.getMessage());
+
+            if (!cp.contains(customClientJar)) {
+                cp.add(0, customClientJar);
+            }
         }
     }
 

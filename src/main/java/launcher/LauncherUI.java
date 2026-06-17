@@ -23,6 +23,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.input.MouseEvent;
 import java.io.StringWriter;
+import java.nio.file.StandardCopyOption;
 
 import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
@@ -1251,7 +1252,7 @@ public class LauncherUI extends Application {
             quickEditBtn.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
                 public void handle(ActionEvent event) {
-                    showEditInstanceDialog();
+                    openEditInstanceSafely();
                 }
             });
 
@@ -1480,8 +1481,22 @@ public class LauncherUI extends Application {
         editBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                dialog.close();
-                showEditInstanceDialog();
+                try {
+                    Instance instance = getCurrentInstance();
+
+                    if (instance == null) {
+                        statusLabel.setText("No hay instancia seleccionada.");
+                        showToast("No hay instancia seleccionada", "warning");
+                        return;
+                    }
+
+                    dialog.close();
+                    openEditInstanceSafely();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    statusLabel.setText("Error abriendo editor: " + ex.getMessage());
+                    showToast("Error abriendo editor", "error");
+                }
             }
         });
 
@@ -1623,6 +1638,114 @@ public class LauncherUI extends Application {
                 new Label("Versión"),
                 versionEditBox,
                 typeLabel
+        );
+
+        /*
+         * CUSTOM CLIENT JAR
+         */
+        VBox customClientCard = new VBox(12);
+        customClientCard.getStyleClass().add("namemc-card");
+
+        Label customClientTitle = new Label("Cliente personalizado");
+        customClientTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #111827;");
+
+        Label customClientInfo = new Label(
+                "Puedes usar un .jar personalizado para esta instancia. " +
+                        "Debe ser compatible con la versión seleccionada."
+        );
+        customClientInfo.setWrapText(true);
+        customClientInfo.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
+
+        final Label customClientPathLabel = new Label(getCustomClientLabel(instance));
+        customClientPathLabel.setWrapText(true);
+        customClientPathLabel.setStyle(
+                "-fx-font-size: 12px;" +
+                        "-fx-text-fill: #4b5563;" +
+                        "-fx-background-color: #f9fafb;" +
+                        "-fx-background-radius: 12px;" +
+                        "-fx-border-color: #e5e7eb;" +
+                        "-fx-border-radius: 12px;" +
+                        "-fx-padding: 10px;"
+        );
+
+        HBox customClientButtons = new HBox(8);
+
+        Button chooseCustomClientBtn = new Button("Elegir .jar");
+        chooseCustomClientBtn.getStyleClass().add("button");
+
+        Button clearCustomClientBtn = new Button("Quitar");
+        clearCustomClientBtn.getStyleClass().add("secondary-button");
+
+        Button openCustomClientFolderBtn = new Button("Abrir carpeta");
+        openCustomClientFolderBtn.getStyleClass().add("secondary-button");
+
+        customClientButtons.getChildren().addAll(
+                chooseCustomClientBtn,
+                clearCustomClientBtn,
+                openCustomClientFolderBtn
+        );
+
+        chooseCustomClientBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    File selectedJar = chooseJarFile(dialog, "Elegir cliente personalizado .jar");
+
+                    if (selectedJar == null) {
+                        return;
+                    }
+
+                    File copied = importCustomClientJarToInstance(instance, selectedJar);
+
+                    instance.customClientJarPath = copied.getAbsolutePath();
+                    InstanceManager.saveInstance(instance);
+
+                    customClientPathLabel.setText(getCustomClientLabel(instance));
+                    statusLabel.setText("Cliente personalizado asignado: " + copied.getName());
+                    showToast("Cliente personalizado asignado", "success");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    statusLabel.setText("Error asignando cliente personalizado: " + ex.getMessage());
+                    showToast("Error asignando cliente personalizado", "error");
+                }
+            }
+        });
+
+        clearCustomClientBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    instance.customClientJarPath = "";
+                    InstanceManager.saveInstance(instance);
+
+                    customClientPathLabel.setText(getCustomClientLabel(instance));
+                    statusLabel.setText("Cliente personalizado eliminado.");
+                    showToast("Cliente personalizado eliminado", "info");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    statusLabel.setText("Error eliminando cliente personalizado: " + ex.getMessage());
+                }
+            }
+        });
+
+        openCustomClientFolderBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    File dir = new File(InstanceManager.getGameDir(instance), "client");
+                    dir.mkdirs();
+                    openFolder(dir);
+                } catch (Exception ex) {
+                    statusLabel.setText("No se pudo abrir carpeta del cliente: " + ex.getMessage());
+                }
+            }
+        });
+
+        customClientCard.getChildren().addAll(
+                customClientTitle,
+                customClientInfo,
+                customClientPathLabel,
+                customClientButtons
         );
 
         /*
@@ -1836,13 +1959,13 @@ public class LauncherUI extends Application {
             }
         });
 
-        content.getChildren().addAll(generalCard, javaCard, notesCard, foldersCard, footer);
+        content.getChildren().addAll(generalCard, customClientCard, javaCard, notesCard, foldersCard, footer);
 
         scroll.setContent(content);
 
         root.setTop(header);
         root.setCenter(scroll);
-        Scene scene = new Scene(appOverlay, 1100, 680);
+        Scene scene = new Scene(root, 1100, 680);
 
         try {
             scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
@@ -2445,6 +2568,14 @@ public class LauncherUI extends Application {
 
         int ram = instance.ram <= 0 ? 2 : instance.ram;
 
+        boolean customClient = instance.customClientJarPath != null
+                && !instance.customClientJarPath.trim().isEmpty()
+                && new File(instance.customClientJarPath).exists();
+
+        if (customClient) {
+            return version + " · " + ram + " GB RAM · Cliente custom";
+        }
+
         return version + " · " + ram + " GB RAM";
     }
 
@@ -2683,6 +2814,11 @@ public class LauncherUI extends Application {
 
         if (instanceBox != null && instanceBox.getValue() != null) {
             return instanceBox.getValue();
+        }
+
+        if (instances != null && !instances.isEmpty()) {
+            selectedInstance = instances.get(0);
+            return selectedInstance;
         }
 
         return null;
@@ -8356,7 +8492,7 @@ public class LauncherUI extends Application {
         final Task<Void> task = new Task<Void>() {
             @Override
             protected Void call() throws Exception {
-                MinecraftLauncher.launch(entry.id, username, ram, gameDir);
+                MinecraftLauncher.launch(entry.id, username, ram, gameDir, getCurrentCustomClientJar());
                 return null;
             }
         };
@@ -9487,6 +9623,103 @@ public class LauncherUI extends Application {
         });
 
         delay.play();
+    }
+
+    private File getCurrentCustomClientJar() {
+        Instance instance = getCurrentInstance();
+
+        if (instance == null || instance.customClientJarPath == null || instance.customClientJarPath.trim().isEmpty()) {
+            return null;
+        }
+
+        File file = new File(instance.customClientJarPath);
+
+        if (!file.exists() || !file.isFile()) {
+            return null;
+        }
+
+        return file;
+    }
+
+    private File chooseJarFile(Stage owner, String title) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Java Archive", "*.jar")
+        );
+
+        return chooser.showOpenDialog(owner);
+    }
+
+    private File importCustomClientJarToInstance(Instance instance, File sourceJar) throws Exception {
+        if (instance == null) {
+            throw new Exception("No hay instancia seleccionada.");
+        }
+
+        if (sourceJar == null || !sourceJar.exists() || !sourceJar.isFile()) {
+            throw new Exception("El .jar seleccionado no existe.");
+        }
+
+        File clientDir = new File(InstanceManager.getGameDir(instance), "client");
+
+        if (!clientDir.exists()) {
+            clientDir.mkdirs();
+        }
+
+        String safeName = sourceJar.getName().replaceAll("[\\\\/:*?\"<>|]", "_");
+
+        if (!safeName.toLowerCase().endsWith(".jar")) {
+            safeName += ".jar";
+        }
+
+        File target = new File(clientDir, safeName);
+
+        Files.copy(
+                sourceJar.toPath(),
+                target.toPath(),
+                StandardCopyOption.REPLACE_EXISTING
+        );
+
+        return target;
+    }
+
+    private String getCustomClientLabel(Instance instance) {
+        if (instance == null || instance.customClientJarPath == null || instance.customClientJarPath.trim().isEmpty()) {
+            return "No hay cliente personalizado asignado. Se usará el cliente normal de Minecraft.";
+        }
+
+        File file = new File(instance.customClientJarPath);
+
+        if (!file.exists()) {
+            return "Cliente personalizado configurado, pero el archivo no existe:\n" + instance.customClientJarPath;
+        }
+
+        return file.getName() + "\n" + file.getAbsolutePath();
+    }
+
+    private void openEditInstanceSafely() {
+        try {
+            Instance instance = getCurrentInstance();
+
+            if (instance == null) {
+                statusLabel.setText("No hay instancia seleccionada.");
+                showToast("No hay instancia seleccionada", "warning");
+                return;
+            }
+
+            showEditInstanceDialog();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+
+            String msg = ex.getMessage() == null ? "Error desconocido" : ex.getMessage();
+
+            if (statusLabel != null) {
+                statusLabel.setText("Error abriendo editor de instancia: " + msg);
+            }
+
+            showToast("Error abriendo editor de instancia", "error");
+        }
     }
 
     private File installSelectedContentFile(ModrinthClient.ModResult selected,
