@@ -381,56 +381,196 @@ public class VersionManager {
     }
 
     private static void download(String urlStr, File target, String expectedHash) throws Exception {
+        int attempts = 3;
+        Exception lastError = null;
 
+        for (int i = 1; i <= attempts; i++) {
+            try {
+                downloadOnce(urlStr, target, expectedHash, i, attempts);
+                return;
+            } catch (Exception ex) {
+                lastError = ex;
+                System.err.println("[Download] Intento " + i + "/" + attempts + " falló: " + ex.getMessage());
+
+                try {
+                    Thread.sleep(1000L * i);
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+
+        throw lastError == null ? new Exception("Error desconocido descargando archivo.") : lastError;
+    }
+
+    private static void downloadOnce(String urlStr, File target, String expectedHash, int attempt, int attempts) throws Exception {
         if (target.exists()) {
             if (expectedHash == null || expectedHash.isEmpty() || checkHash(target, expectedHash)) {
                 return;
             }
-            System.out.println("Hash mismatch for " + target.getName() + ", re-downloading...");
-            target.delete();
+
+            System.out.println("[Download] Hash incorrecto en archivo existente, borrando: " + target.getAbsolutePath());
+
+            if (!target.delete()) {
+                System.err.println("[Download] No se pudo borrar archivo corrupto: " + target.getAbsolutePath());
+            }
         }
 
-        target.getParentFile().mkdirs();
+        File parent = target.getParentFile();
 
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(30000);
-        conn.setReadTimeout(30000);
-        InputStream in = conn.getInputStream();
-        FileOutputStream out = new FileOutputStream(target);
-
-        byte[] buffer = new byte[8192];
-        int read;
-        while ((read = in.read(buffer)) != -1) {
-            out.write(buffer, 0, read);
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
         }
 
-        out.close();
-        in.close();
+        File tempFile = new File(target.getAbsolutePath() + ".tmp");
 
-        if (expectedHash != null && !expectedHash.isEmpty()) {
-            if (!checkHash(target, expectedHash)) {
-                throw new IOException("Failed to verify hash for " + target.getName());
+        if (tempFile.exists()) {
+            tempFile.delete();
+        }
+
+        System.out.println("[Download] Descargando (" + attempt + "/" + attempts + "): " + urlStr);
+        System.out.println("[Download] Destino: " + target.getAbsolutePath());
+
+        java.net.HttpURLConnection conn = null;
+        java.io.InputStream in = null;
+        java.io.FileOutputStream out = null;
+
+        try {
+            java.net.URL url = java.net.URI.create(urlStr).toURL();
+            conn = (java.net.HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "MinecraftLauncher/1.0");
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(60000);
+            conn.setInstanceFollowRedirects(true);
+
+            int code = conn.getResponseCode();
+
+            if (code < 200 || code >= 300) {
+                String body = "";
+
+                try {
+                    java.io.InputStream err = conn.getErrorStream();
+
+                    if (err != null) {
+                        java.util.Scanner scanner = new java.util.Scanner(err, "UTF-8").useDelimiter("\\A");
+                        body = scanner.hasNext() ? scanner.next() : "";
+                        scanner.close();
+                        err.close();
+                    }
+                } catch (Exception ignored) {
+                }
+
+                throw new java.io.IOException("HTTP " + code + " descargando " + urlStr + ". " + body);
+            }
+
+            long contentLength = conn.getContentLengthLong();
+
+            in = conn.getInputStream();
+            out = new java.io.FileOutputStream(tempFile);
+
+            byte[] buffer = new byte[8192];
+            int read;
+            long downloaded = 0;
+
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+                downloaded += read;
+            }
+
+            out.close();
+            out = null;
+
+            if (!tempFile.exists() || tempFile.length() == 0) {
+                throw new java.io.IOException("La descarga quedó vacía: " + urlStr);
+            }
+
+            if (contentLength > 0 && tempFile.length() != contentLength) {
+                throw new java.io.IOException(
+                        "Descarga incompleta. Esperado: " + contentLength +
+                                " bytes, recibido: " + tempFile.length() + " bytes."
+                );
+            }
+
+            if (expectedHash != null && !expectedHash.isEmpty()) {
+                if (!checkHash(tempFile, expectedHash)) {
+                    String actual = getSha1(tempFile);
+
+                    tempFile.delete();
+
+                    throw new java.io.IOException(
+                            "Failed to verify hash for " + target.getName() +
+                                    ". Expected: " + expectedHash +
+                                    ", actual: " + actual +
+                                    ", url: " + urlStr
+                    );
+                }
+            }
+
+            if (target.exists()) {
+                target.delete();
+            }
+
+            if (!tempFile.renameTo(target)) {
+                throw new java.io.IOException("No se pudo mover archivo temporal a destino: " + target.getAbsolutePath());
+            }
+
+            System.out.println("[Download] OK: " + target.getName());
+        } finally {
+            if (out != null) {
+                out.close();
+            }
+
+            if (in != null) {
+                in.close();
+            }
+
+            if (conn != null) {
+                conn.disconnect();
+            }
+
+            if (tempFile.exists() && (!target.exists() || target.length() == 0)) {
+                tempFile.delete();
             }
         }
     }
 
-    private static boolean checkHash(File file, String expected) {
+    private static String getSha1(File file) throws Exception {
+        java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+
+        java.io.FileInputStream fis = new java.io.FileInputStream(file);
+
         try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
-            FileInputStream fis = new FileInputStream(file);
-            byte[] dataBytes = new byte[1024];
-            int nread = 0;
+            byte[] dataBytes = new byte[8192];
+            int nread;
+
             while ((nread = fis.read(dataBytes)) != -1) {
                 md.update(dataBytes, 0, nread);
             }
-            byte[] mdbytes = md.digest();
-            StringBuilder sb = new StringBuilder();
-            for (byte b : mdbytes) {
-                sb.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
-            }
+        } finally {
             fis.close();
-            return sb.toString().equalsIgnoreCase(expected);
+        }
+
+        byte[] mdbytes = md.digest();
+
+        StringBuilder sb = new StringBuilder();
+
+        for (byte b : mdbytes) {
+            sb.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
+        }
+
+        return sb.toString();
+    }
+
+    private static boolean checkHash(File file, String expected) {
+        try {
+            if (file == null || !file.exists() || expected == null || expected.trim().isEmpty()) {
+                return false;
+            }
+
+            String actual = getSha1(file);
+
+            return actual.equalsIgnoreCase(expected.trim());
         } catch (Exception e) {
             return false;
         }
