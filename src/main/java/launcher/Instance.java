@@ -38,6 +38,6 @@ public class Instance {
             return name;
         }
 
-        return "Instancia";
+        return "Instance";
     }
 }

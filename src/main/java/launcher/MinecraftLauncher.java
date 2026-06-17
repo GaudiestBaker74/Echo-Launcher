@@ -101,7 +101,7 @@ public class MinecraftLauncher {
          * Main class.
          */
         if (!json.has("mainClass")) {
-            throw new Exception("El JSON de la versión no contiene mainClass.");
+            throw new Exception("The version JSON does not contain mainClass.");
         }
 
         cmd.add(json.get("mainClass").getAsString());
@@ -136,13 +136,13 @@ public class MinecraftLauncher {
         cmd.add("--userType");
         cmd.add("mojang");
 
-        System.out.println("[LAUNCHER-DEBUG] Ejecutando Minecraft con Java:");
+        System.out.println("[LAUNCHER-DEBUG] Running Minecraft with Java:");
         System.out.println(javaPath);
 
         System.out.println("[LAUNCHER-DEBUG] GameDir:");
         System.out.println(gameDir.getAbsolutePath());
 
-        System.out.println("[LAUNCHER-DEBUG] Argumentos:");
+        System.out.println("[LAUNCHER-DEBUG] Arguments:");
         System.out.println(String.join(" ", cmd));
 
         final Process process = new ProcessBuilder(cmd)
@@ -165,7 +165,7 @@ public class MinecraftLauncher {
                 true
         );
 
-        System.out.println("[LAUNCHER-DEBUG] Proceso de Minecraft iniciado. PID disponible: " + process.pid());
+        System.out.println("[LAUNCHER-DEBUG] Minecraft process started. PID available: " + process.pid());
 
         /*
          * Esperamos unos segundos para detectar crashes inmediatos.
@@ -182,14 +182,14 @@ public class MinecraftLauncher {
             } catch (InterruptedException ignored) {
             }
 
-            System.out.println("[LAUNCHER-DEBUG] Minecraft terminó rápidamente con código: " + exitCode);
+            System.out.println("[LAUNCHER-DEBUG] Minecraft finished quickly with code: " + exitCode);
 
             if (exitCode != 0) {
                 CrashAnalyzer.CrashInfo crashInfo = CrashAnalyzer.analyze(gameLog.toString(), exitCode);
                 throw new CrashAnalyzer.CrashException(crashInfo, gameLog.toString(), exitCode);
             }
 
-            throw new Exception("Minecraft se cerró inmediatamente sin mostrar ventana. Revisa el log para más detalles.");
+            throw new Exception("Minecraft closed immediately without showing a window. Check the log for more details.");
         }
 
         /*
@@ -208,15 +208,15 @@ public class MinecraftLauncher {
                     } catch (InterruptedException ignored) {
                     }
 
-                    System.out.println("[LAUNCHER-DEBUG] Minecraft terminó con código: " + exitCode);
+                    System.out.println("[LAUNCHER-DEBUG] Minecraft finished with code: " + exitCode);
 
                     if (exitCode != 0) {
                         CrashAnalyzer.CrashInfo crashInfo = CrashAnalyzer.analyze(gameLog.toString(), exitCode);
 
                         System.err.println("[CRASH-ANALYZER] " + crashInfo.title);
-                        System.err.println("[CRASH-ANALYZER] Causa: " + crashInfo.cause);
-                        System.err.println("[CRASH-ANALYZER] Solución: " + crashInfo.solution);
-                        System.err.println("[CRASH-ANALYZER] Detalles:");
+                        System.err.println("[CRASH-ANALYZER] Cause: " + crashInfo.cause);
+                        System.err.println("[CRASH-ANALYZER] Solution: " + crashInfo.solution);
+                        System.err.println("[CRASH-ANALYZER] Details:");
                         System.err.println(crashInfo.details);
                     }
                 } catch (Exception ex) {
@@ -228,13 +228,13 @@ public class MinecraftLauncher {
         watcher.setDaemon(true);
         watcher.start();
 
-        System.out.println("[LAUNCHER-DEBUG] Minecraft sigue ejecutándose. El launcher queda libre.");
+        System.out.println("[LAUNCHER-DEBUG] Minecraft is still running. The launcher is free.");
     }
 
     private static String getJavaPath(String version, JsonObject json) throws Exception {
         int requiredJava = resolveRequiredJavaMajor(version, json);
 
-        System.out.println("[JavaRuntime] Minecraft " + version + " requiere Java " + requiredJava);
+        System.out.println("[JavaRuntime] Minecraft " + version + " requires Java " + requiredJava);
 
         return JavaRuntimeManager.getJava(requiredJava);
     }
@@ -270,7 +270,7 @@ public class MinecraftLauncher {
                 }
             }
         } catch (Exception ex) {
-            System.err.println("[JavaRuntime] No se pudo leer javaVersion del JSON: " + ex.getMessage());
+            System.err.println("[JavaRuntime] Could not read javaVersion from JSON: " + ex.getMessage());
         }
 
         String mc = extractMinecraftVersion(version);
@@ -325,7 +325,7 @@ public class MinecraftLauncher {
                 }
             }
         } catch (Exception ex) {
-            System.err.println("[Assets] No se pudo resolver asset index: " + ex.getMessage());
+            System.err.println("[Assets] Could not resolve asset index: " + ex.getMessage());
         }
 
         if (assetId == null || assetId.trim().isEmpty()) {
@@ -409,7 +409,7 @@ public class MinecraftLauncher {
         cleaned = cleaned.replace("\uFFFD", "");
 
         if (looksLikeBinaryGarbage(cleaned)) {
-            return "[línea binaria/corrupta omitida]";
+            return "[binary/corrupt line omitted]";
         }
 
         StringBuilder sb = new StringBuilder();
@@ -552,12 +552,12 @@ public class MinecraftLauncher {
              * Evitamos que el usuario duplique memoria desde aquí.
              */
             if (arg.startsWith("-Xmx") || arg.startsWith("-Xms")) {
-                System.out.println("[JVM Args] Ignorado argumento de memoria duplicado: " + arg);
+                System.out.println("[JVM Args] Ignored duplicate memory argument: " + arg);
                 continue;
             }
 
             cmd.add(arg);
-            System.out.println("[JVM Args] Añadido: " + arg);
+            System.out.println("[JVM Args] Added: " + arg);
         }
     }
 
@@ -614,7 +614,7 @@ public class MinecraftLauncher {
             return;
         }
 
-        System.out.println("[CustomClient] Usando cliente personalizado:");
+        System.out.println("[CustomClient] Using custom client:");
         System.out.println("[CustomClient] " + customClientJar.getAbsolutePath());
 
         java.util.Set<String> removePaths = new java.util.HashSet<String>();
@@ -647,7 +647,7 @@ public class MinecraftLauncher {
                     if (!removePaths.contains(path)) {
                         filtered.add(f);
                     } else {
-                        System.out.println("[CustomClient] Reemplazando client jar: " + f.getName());
+                        System.out.println("[CustomClient] Replacing client jar: " + f.getName());
                     }
                 } catch (Exception ex) {
                     filtered.add(f);
@@ -662,7 +662,7 @@ public class MinecraftLauncher {
             cp.add(customClientJar);
             cp.addAll(filtered);
         } catch (Exception ex) {
-            System.err.println("[CustomClient] No se pudo ajustar classpath: " + ex.getMessage());
+            System.err.println("[CustomClient] Could not adjust classpath: " + ex.getMessage());
 
             if (!cp.contains(customClientJar)) {
                 cp.add(0, customClientJar);

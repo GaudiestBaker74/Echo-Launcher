@@ -22,7 +22,7 @@ public class CrashAnalyzer {
         private final int exitCode;
 
         public CrashException(CrashInfo crashInfo, String gameLog, int exitCode) {
-            super(crashInfo == null ? "Minecraft crasheó." : crashInfo.title);
+            super(crashInfo == null ? "Minecraft crashed." : crashInfo.title);
             this.crashInfo = crashInfo;
             this.gameLog = gameLog;
             this.exitCode = exitCode;
@@ -52,22 +52,20 @@ public class CrashAnalyzer {
                 || lower.contains("has been compiled by a more recent version of the java runtime")
                 || lower.contains("class file version")) {
             return new CrashInfo(
-                    "Java incompatible",
-                    "Minecraft o algún mod fue compilado para una versión de Java más nueva que la que se está usando.",
-                    "Usa el Java recomendado para esa versión. Si el launcher tiene runtimes automáticos, elimina el runtime descargado corrupto y vuelve a iniciar. Para Minecraft moderno puede requerirse Java 21 o Java 25.",
-                    extractImportantLines(log)
-            );
+                    "Incompatible Java",
+                    "Minecraft or a mod was compiled for a newer version of Java than the one being used.",
+                    "Use the recommended Java for that version. If the launcher has automatic runtimes, remove the corrupted downloaded runtime and try again. Modern Minecraft may require Java 21 or Java 25.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("outofmemoryerror")
                 || lower.contains("java heap space")
                 || lower.contains("unable to allocate")) {
             return new CrashInfo(
-                    "Memoria RAM insuficiente",
-                    "Minecraft se quedó sin memoria durante la carga o durante la partida.",
-                    "Sube la RAM asignada en el launcher. Para mods normales usa 4-6 GB. Para packs grandes o shaders usa 6-8 GB. Evita asignar toda la RAM del PC.",
-                    extractImportantLines(log)
-            );
+                    "Insufficient RAM Memory",
+                    "Minecraft ran out of memory during loading or during the game.",
+                    "Increase the allocated RAM in the launcher. For normal mods use 4-6 GB. For large packs or shaders use 6-8 GB. Avoid allocating all the PC's RAM.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("modresolutionexception")
@@ -78,21 +76,19 @@ public class CrashAnalyzer {
                 || lower.contains("but only the wrong version is present")
                 || lower.contains("missing required mod")) {
             return new CrashInfo(
-                    "Falta una dependencia de mod",
-                    "Uno o más mods necesitan otra librería/mod para funcionar.",
-                    "Abre el buscador de mods e instala la dependencia indicada en el log. Revisa especialmente Fabric API, Cloth Config, Architectury, Sodium, Indium o Mod Menu.",
-                    extractImportantLines(log)
-            );
+                    "Missing mod dependency",
+                    "One or more mods require another library/mod to function.",
+                    "Open the mod browser and install the dependency indicated in the log. Check especially Fabric API, Cloth Config, Architectury, Sodium, Indium or Mod Menu.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("fabricloader")
                 && (lower.contains("incompatible mod set") || lower.contains("could not find required mod"))) {
             return new CrashInfo(
-                    "Mods incompatibles con Fabric",
-                    "Fabric detectó que el conjunto de mods no es compatible o que falta un mod requerido.",
-                    "Revisa la versión de Minecraft seleccionada y descarga mods compatibles exactamente con esa versión. Desactiva mods sospechosos desde el panel de Mods.",
-                    extractImportantLines(log)
-            );
+                    "Incompatible mods with Fabric",
+                    "Fabric detected that the mod set is not compatible or a required mod is missing.",
+                    "Check the selected Minecraft version and download mods compatible with exactly that version. Disable suspicious mods from the Mods panel.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("duplicatemod")
@@ -100,11 +96,10 @@ public class CrashAnalyzer {
                 || lower.contains("multiple versions of")
                 || lower.contains("mod id") && lower.contains("duplicate")) {
             return new CrashInfo(
-                    "Mods duplicados",
-                    "Hay dos versiones del mismo mod instaladas al mismo tiempo.",
-                    "Abre el panel de Mods y elimina o desactiva una de las copias duplicadas.",
-                    extractImportantLines(log)
-            );
+                    "Duplicate mods",
+                    "There are two versions of the same mod installed at the same time.",
+                    "Open the Mods panel and remove or disable one of the duplicate copies.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("mixin apply failed")
@@ -112,11 +107,10 @@ public class CrashAnalyzer {
                 || lower.contains("injection failure")
                 || lower.contains("critical injection failure")) {
             return new CrashInfo(
-                    "Error de Mixin",
-                    "Un mod intentó modificar clases internas de Minecraft y falló. Suele ser por versión incorrecta o incompatibilidad entre mods.",
-                    "Actualiza el mod que aparece en el error. Si empezó después de instalar un mod nuevo, desactívalo. Revisa también Sodium/Iris/Indium y mods visuales.",
-                    extractImportantLines(log)
-            );
+                    "Mixin Error",
+                    "A mod tried to modify Minecraft's internal classes and failed. This is usually due to an incorrect version or incompatibility between mods.",
+                    "Update the mod that appears in the error. If it started after installing a new mod, disable it. Also check Sodium/Iris/Indium and visual mods.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("glfw error 65542")
@@ -124,22 +118,20 @@ public class CrashAnalyzer {
                 || lower.contains("pixel format not accelerated")
                 || lower.contains("failed to create window")) {
             return new CrashInfo(
-                    "Problema gráfico / OpenGL",
-                    "Minecraft no pudo iniciar correctamente la ventana gráfica.",
-                    "Actualiza los drivers de la tarjeta gráfica. Si usas una GPU antigua, prueba una versión más vieja de Minecraft o desactiva shaders/mods gráficos.",
-                    extractImportantLines(log)
-            );
+                    "Graphic/OpenGL Problem",
+                    "Minecraft could not start the graphics window correctly.",
+                    "Update your graphics card drivers. If you are using an older GPU, try an older version of Minecraft or disable graphics shaders/mods.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("accessdeniedexception")
                 || lower.contains("being used by another process")
                 || lower.contains("permission denied")) {
             return new CrashInfo(
-                    "Permisos o archivo bloqueado",
-                    "El juego no pudo acceder a un archivo porque está bloqueado o no tiene permisos.",
-                    "Cierra Minecraft si quedó abierto, cierra editores/antivirus que puedan bloquear archivos y ejecuta el launcher de nuevo.",
-                    extractImportantLines(log)
-            );
+                    "Permissions or blocked file",
+                    "The game could not access a file because it is blocked or has no permissions.",
+                    "Close Minecraft if it remained open, close editors/antiviruses that may block files and run the launcher again.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("failed to download")
@@ -148,35 +140,33 @@ public class CrashAnalyzer {
                 || lower.contains("unknownhostexception")
                 || lower.contains("sslhandshakeexception")) {
             return new CrashInfo(
-                    "Error de descarga o conexión",
-                    "Minecraft no pudo descargar o acceder a un recurso necesario.",
-                    "Revisa tu conexión a internet, firewall o antivirus. Después usa la opción de reparar instalación si está disponible.",
-                    extractImportantLines(log)
-            );
+                    "Download or connection error",
+                    "Minecraft could not download or access a necessary resource.",
+                    "Check your internet connection, firewall or antivirus. Then use the repair installation option if available.",
+                    extractImportantLines(log));
         }
 
         if (lower.contains("no such file")
                 || lower.contains("filenotfoundexception")
                 || lower.contains("missing")) {
             return new CrashInfo(
-                    "Archivo faltante",
-                    "Falta un archivo necesario para iniciar Minecraft.",
-                    "Repara o vuelve a preparar la versión seleccionada. Si es un mod, reinstálalo desde el buscador.",
-                    extractImportantLines(log)
-            );
+                    "Missing file",
+                    "A file necessary to start Minecraft is missing.",
+                    "Repair or re-prepare the selected version. If it is a mod, reinstall it from the browser.",
+                    extractImportantLines(log));
         }
 
         return new CrashInfo(
-                "Minecraft se cerró con error",
-                "El juego terminó con código de salida " + exitCode + ", pero no se pudo identificar una causa exacta automáticamente.",
-                "Revisa los últimos errores del log. Prueba desactivar mods recientes, reparar la instalación o usar otra versión de Minecraft/Java.",
-                extractImportantLines(log)
-        );
+                "Minecraft closed with error",
+                "The game terminated with exit code " + exitCode
+                        + ", but an exact cause could not be identified automatically.",
+                "Check the latest errors in the log. Try disabling recent mods, repairing the installation or using another version of Minecraft/Java.",
+                extractImportantLines(log));
     }
 
     private static String extractImportantLines(String log) {
         if (log == null || log.trim().isEmpty()) {
-            return "No hay log disponible.";
+            return "No log available.";
         }
 
         String[] lines = log.split("\\r?\\n");

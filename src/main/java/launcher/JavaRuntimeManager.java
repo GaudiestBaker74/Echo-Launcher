@@ -20,11 +20,11 @@ public class JavaRuntimeManager {
 
         if (existingJava != null && existingJava.exists()) {
             makeExecutable(existingJava);
-            System.out.println("[JavaRuntime] Usando Java " + majorVersion + ": " + existingJava.getAbsolutePath());
+            System.out.println("[JavaRuntime] Using Java " + majorVersion + ": " + existingJava.getAbsolutePath());
             return existingJava.getAbsolutePath();
         }
 
-        System.out.println("[JavaRuntime] Java " + majorVersion + " no encontrado. Descargando runtime...");
+        System.out.println("[JavaRuntime] Java " + majorVersion + " not found. Downloading runtime...");
 
         deleteDirectory(runtimeDir);
         runtimeDir.mkdirs();
@@ -35,15 +35,15 @@ public class JavaRuntimeManager {
 
         if (javaExe == null || !javaExe.exists()) {
             throw new Exception(
-                    "No se pudo encontrar " + PlatformManager.getJavaExecutableName() +
-                            " después de descargar Java " + majorVersion +
-                            " en " + runtimeDir.getAbsolutePath()
+                    "Could not find " + PlatformManager.getJavaExecutableName() +
+                            " after downloading Java " + majorVersion +
+                            " in " + runtimeDir.getAbsolutePath()
             );
         }
 
         makeExecutable(javaExe);
 
-        System.out.println("[JavaRuntime] Java " + majorVersion + " instalado: " + javaExe.getAbsolutePath());
+        System.out.println("[JavaRuntime] Java " + majorVersion + " installed: " + javaExe.getAbsolutePath());
 
         return javaExe.getAbsolutePath();
     }
@@ -67,7 +67,7 @@ public class JavaRuntimeManager {
         try {
             downloadFile(url, archiveFile);
         } catch (Exception jreError) {
-            System.err.println("[JavaRuntime] No se pudo descargar JRE. Probando JDK. Error: " + jreError.getMessage());
+            System.err.println("[JavaRuntime] Could not download JRE. Trying JDK. Error: " + jreError.getMessage());
 
             url = buildAdoptiumUrl(majorVersion, "jdk");
             downloadFile(url, archiveFile);
@@ -103,7 +103,7 @@ public class JavaRuntimeManager {
             int code = conn.getResponseCode();
 
             if (code < 200 || code >= 300) {
-                throw new Exception("HTTP " + code + " descargando runtime Java");
+                throw new Exception("HTTP " + code + " downloading Java runtime");
             }
 
             long total = conn.getContentLengthLong();
@@ -127,9 +127,9 @@ public class JavaRuntimeManager {
 
                     if (total > 0) {
                         int percent = (int) ((downloaded * 100) / total);
-                        System.out.println("[JavaRuntime] Descargando Java... " + percent + "%");
+                        System.out.println("[JavaRuntime] Downloading Java... " + percent + "%");
                     } else {
-                        System.out.println("[JavaRuntime] Descargando Java... " + downloaded / 1024 / 1024 + " MB");
+                        System.out.println("[JavaRuntime] Downloading Java... " + downloaded / 1024 / 1024 + " MB");
                     }
                 }
             }
@@ -146,7 +146,7 @@ public class JavaRuntimeManager {
         }
 
         if (!targetFile.exists() || targetFile.length() == 0) {
-            throw new Exception("La descarga del runtime Java quedó vacía.");
+            throw new Exception("The Java runtime download was empty.");
         }
     }
 
@@ -170,7 +170,7 @@ public class JavaRuntimeManager {
                 conn.disconnect();
 
                 if (location == null || location.trim().isEmpty()) {
-                    throw new Exception("Redirect sin Location descargando Java.");
+                    throw new Exception("Redirect without Location downloading Java.");
                 }
 
                 current = location;
@@ -180,7 +180,7 @@ public class JavaRuntimeManager {
             return conn;
         }
 
-        throw new Exception("Demasiados redirects descargando Java.");
+        throw new Exception("Too many redirects downloading Java.");
     }
 
     private static void extractArchive(File archiveFile, File targetDir) throws Exception {
@@ -210,7 +210,7 @@ public class JavaRuntimeManager {
                 String outPath = outFile.getCanonicalPath();
 
                 if (!outPath.startsWith(targetPath + File.separator)) {
-                    throw new Exception("Entrada ZIP insegura: " + entry.getName());
+                    throw new Exception("Insecure ZIP entry: " + entry.getName());
                 }
 
                 if (entry.isDirectory()) {
@@ -283,7 +283,7 @@ public class JavaRuntimeManager {
         int exit = process.waitFor();
 
         if (exit != 0) {
-            throw new Exception("No se pudo extraer runtime Java con tar. Código: " + exit);
+            throw new Exception("Could not extract Java runtime with tar. Code: " + exit);
         }
     }
 
@@ -352,7 +352,7 @@ public class JavaRuntimeManager {
         }
 
         if (!file.delete()) {
-            System.err.println("[JavaRuntime] No se pudo borrar: " + file.getAbsolutePath());
+            System.err.println("[JavaRuntime] Could not delete: " + file.getAbsolutePath());
         }
     }
 }

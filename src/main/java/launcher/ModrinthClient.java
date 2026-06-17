@@ -112,7 +112,7 @@ public class ModrinthClient {
 
     private static List<ModResult> parseSearchResponse(JsonObject response, String expectedProjectType) throws Exception {
         if (!response.has("hits") || !response.get("hits").isJsonArray()) {
-            throw new Exception("Respuesta inválida de Modrinth: no existe el array 'hits'.");
+            throw new Exception("Invalid Modrinth response: 'hits' array does not exist.");
         }
 
         JsonArray hits = response.getAsJsonArray("hits");
@@ -158,11 +158,11 @@ public class ModrinthClient {
 
                 results.add(result);
             } catch (Exception ex) {
-                System.err.println("[Modrinth] Error parseando resultado: " + ex.getMessage());
+                System.err.println("[Modrinth] Error parsing result: " + ex.getMessage());
             }
         }
 
-        System.out.println("[Modrinth] Resultados encontrados: " + results.size() + " | tipo=" + expectedProjectType);
+        System.out.println("[Modrinth] Results found: " + results.size() + " | type=" + expectedProjectType);
 
         return results;
     }
@@ -173,7 +173,7 @@ public class ModrinthClient {
 
     public static ModVersionFile getLatestVersionFile(String projectId, String gameVersion, String projectType) throws Exception {
         if (projectId == null || projectId.trim().isEmpty()) {
-            throw new Exception("Project ID inválido.");
+            throw new Exception("Invalid Project ID.");
         }
 
         if (projectType == null || projectType.trim().isEmpty()) {
@@ -210,7 +210,7 @@ public class ModrinthClient {
         }
 
         if (versions == null || versions.size() == 0) {
-            throw new Exception("No se encontraron versiones descargables para este contenido.");
+            throw new Exception("No downloadable versions found for this content.");
         }
 
         JsonObject selectedVersion = versions.get(0).getAsJsonObject();
@@ -245,13 +245,13 @@ public class ModrinthClient {
         }
 
         if (!selectedVersion.has("files") || !selectedVersion.get("files").isJsonArray()) {
-            throw new Exception("La versión seleccionada no contiene archivos.");
+            throw new Exception("The selected version contains no files.");
         }
 
         JsonArray files = selectedVersion.getAsJsonArray("files");
 
         if (files.size() == 0) {
-            throw new Exception("No se encontró ningún archivo descargable.");
+            throw new Exception("No downloadable file found.");
         }
 
         JsonObject selectedFile = null;
@@ -302,7 +302,7 @@ public class ModrinthClient {
         String filename = getString(selectedFile, "filename", "");
 
         if (url.isEmpty()) {
-            throw new Exception("El archivo seleccionado no tiene URL.");
+            throw new Exception("The selected file has no URL.");
         }
 
         if (filename.isEmpty()) {
@@ -360,7 +360,7 @@ public class ModrinthClient {
                                                        String gameVersion,
                                                        String projectType) throws Exception {
         if (projectId == null || projectId.trim().isEmpty()) {
-            throw new Exception("Project ID inválido.");
+            throw new Exception("Invalid Project ID.");
         }
 
         if (projectType == null || projectType.trim().isEmpty()) {

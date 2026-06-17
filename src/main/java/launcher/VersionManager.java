@@ -103,7 +103,7 @@ public class VersionManager {
             e.printStackTrace();
         }
         
-        // Fallback: si no hay versiones, añadir algunas comunes
+        // Fallback: if no versions, add some common ones
         if (list.isEmpty()) {
             System.out.println("No versions found, using fallback list");
             String[] fallbackVersions = {
@@ -390,7 +390,7 @@ public class VersionManager {
                 return;
             } catch (Exception ex) {
                 lastError = ex;
-                System.err.println("[Download] Intento " + i + "/" + attempts + " falló: " + ex.getMessage());
+                System.err.println("[Download] Attempt " + i + "/" + attempts + " failed: " + ex.getMessage());
 
                 try {
                     Thread.sleep(1000L * i);
@@ -399,7 +399,7 @@ public class VersionManager {
             }
         }
 
-        throw lastError == null ? new Exception("Error desconocido descargando archivo.") : lastError;
+        throw lastError == null ? new Exception("Unknown error downloading file.") : lastError;
     }
 
     private static void downloadOnce(String urlStr, File target, String expectedHash, int attempt, int attempts) throws Exception {
@@ -408,10 +408,10 @@ public class VersionManager {
                 return;
             }
 
-            System.out.println("[Download] Hash incorrecto en archivo existente, borrando: " + target.getAbsolutePath());
+            System.out.println("[Download] Incorrect hash in existing file, deleting: " + target.getAbsolutePath());
 
             if (!target.delete()) {
-                System.err.println("[Download] No se pudo borrar archivo corrupto: " + target.getAbsolutePath());
+                System.err.println("[Download] Could not delete corrupt file: " + target.getAbsolutePath());
             }
         }
 
@@ -427,8 +427,8 @@ public class VersionManager {
             tempFile.delete();
         }
 
-        System.out.println("[Download] Descargando (" + attempt + "/" + attempts + "): " + urlStr);
-        System.out.println("[Download] Destino: " + target.getAbsolutePath());
+        System.out.println("[Download] Downloading (" + attempt + "/" + attempts + "): " + urlStr);
+        System.out.println("[Download] Destination: " + target.getAbsolutePath());
 
         java.net.HttpURLConnection conn = null;
         java.io.InputStream in = null;
@@ -461,7 +461,7 @@ public class VersionManager {
                 } catch (Exception ignored) {
                 }
 
-                throw new java.io.IOException("HTTP " + code + " descargando " + urlStr + ". " + body);
+                throw new java.io.IOException("HTTP " + code + " downloading " + urlStr + ". " + body);
             }
 
             long contentLength = conn.getContentLengthLong();
@@ -482,13 +482,13 @@ public class VersionManager {
             out = null;
 
             if (!tempFile.exists() || tempFile.length() == 0) {
-                throw new java.io.IOException("La descarga quedó vacía: " + urlStr);
+                throw new java.io.IOException("Download was empty: " + urlStr);
             }
 
             if (contentLength > 0 && tempFile.length() != contentLength) {
                 throw new java.io.IOException(
-                        "Descarga incompleta. Esperado: " + contentLength +
-                                " bytes, recibido: " + tempFile.length() + " bytes."
+                        "Incomplete download. Expected: " + contentLength +
+                                " bytes, received: " + tempFile.length() + " bytes."
                 );
             }
 
@@ -512,7 +512,7 @@ public class VersionManager {
             }
 
             if (!tempFile.renameTo(target)) {
-                throw new java.io.IOException("No se pudo mover archivo temporal a destino: " + target.getAbsolutePath());
+                throw new java.io.IOException("Could not move temporary file to destination: " + target.getAbsolutePath());
             }
 
             System.out.println("[Download] OK: " + target.getName());
@@ -577,14 +577,14 @@ public class VersionManager {
     }
 
     public static JsonObject repairVersion(String version) throws Exception {
-        System.out.println("[Repair] Reparando versión: " + version);
+        System.out.println("[Repair] Repairing version: " + version);
 
         prepared.remove(version);
 
         File nativesDir = getNativesDir();
 
         if (nativesDir.exists()) {
-            System.out.println("[Repair] Limpiando natives...");
+            System.out.println("[Repair] Cleaning natives...");
             deleteDirectory(nativesDir);
         }
 
@@ -592,7 +592,7 @@ public class VersionManager {
 
         prepared.add(version);
 
-        System.out.println("[Repair] Reparación terminada: " + version);
+        System.out.println("[Repair] Repair finished: " + version);
 
         return repaired;
     }
@@ -616,7 +616,7 @@ public class VersionManager {
             try {
                 root = JsonParser.parseReader(new FileReader(jsonFile)).getAsJsonObject();
             } catch (Exception ex) {
-                System.err.println("[Repair] JSON corrupto, intentando descargar de nuevo: " + version);
+                System.err.println("[Repair] Corrupt JSON, attempting to download again: " + version);
                 jsonFile.delete();
 
                 String versionUrl = getVersionUrl(version);
@@ -633,7 +633,7 @@ public class VersionManager {
 
         if (root.has("inheritsFrom")) {
             String parent = root.get("inheritsFrom").getAsString();
-            System.out.println("[Repair] " + version + " hereda de " + parent);
+            System.out.println("[Repair] " + version + " inherits from " + parent);
             repairVersionRecursive(parent, visited);
         }
 
@@ -645,18 +645,18 @@ public class VersionManager {
 
             File jarFile = new File(versionDir, version + ".jar");
 
-            System.out.println("[Repair] Verificando client jar: " + jarFile.getName());
+            System.out.println("[Repair] Verifying client jar: " + jarFile.getName());
             download(jarUrl, jarFile, sha1);
         }
 
-        System.out.println("[Repair] Verificando librerías...");
+        System.out.println("[Repair] Verifying libraries...");
         downloadLibraries(root);
 
-        System.out.println("[Repair] Reextrayendo natives...");
+        System.out.println("[Repair] Re-extracting natives...");
         extractNativesFromJson(root);
 
         if (root.has("assetIndex")) {
-            System.out.println("[Repair] Verificando assets...");
+            System.out.println("[Repair] Verifying assets...");
             prepareAssets(root);
         }
 
@@ -707,7 +707,7 @@ public class VersionManager {
                     extractNatives(target, getNativesDir());
                 }
             } catch (Exception ex) {
-                System.err.println("[Repair] No se pudo extraer native: " + ex.getMessage());
+                System.err.println("[Repair] Could not extract native: " + ex.getMessage());
             }
         }
     }
@@ -728,7 +728,7 @@ public class VersionManager {
         }
 
         if (!file.delete()) {
-            System.err.println("[Repair] No se pudo borrar: " + file.getAbsolutePath());
+            System.err.println("[Repair] Could not delete: " + file.getAbsolutePath());
         }
     }
 

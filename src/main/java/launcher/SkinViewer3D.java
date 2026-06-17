@@ -83,9 +83,9 @@ public class SkinViewer3D {
     public static void show(Window owner, String username, File skinFile, File capeFile) {
         if (!Platform.isSupported(ConditionalFeature.SCENE3D)) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Visor 3D");
-            alert.setHeaderText("JavaFX 3D no está disponible");
-            alert.setContentText("Tu instalación de JavaFX no soporta Scene3D en este equipo.");
+            alert.setTitle("3D Viewer");
+            alert.setHeaderText("JavaFX 3D is not available");
+            alert.setContentText("Your JavaFX installation does not support Scene3D on this computer.");
             alert.showAndWait();
             return;
         }
@@ -95,7 +95,7 @@ public class SkinViewer3D {
             Image cape = loadCape(capeFile);
 
             Stage dialog = new Stage();
-            dialog.setTitle("Visor 3D de Skin");
+            dialog.setTitle("3D Skin Viewer");
             dialog.initModality(Modality.APPLICATION_MODAL);
 
             if (owner != null) {
@@ -110,14 +110,14 @@ public class SkinViewer3D {
             VBox header = new VBox(4);
             header.setPadding(new Insets(20, 22, 12, 22));
 
-            Label title = new Label("Visor 3D");
+            Label title = new Label("3D Viewer");
             title.setStyle(
                     "-fx-font-size: 24px;" +
                             "-fx-font-weight: 800;" +
                             "-fx-text-fill: #111827;"
             );
 
-            Label subtitle = new Label("Arrastra para rotar · Ctrl + rueda para zoom");
+            Label subtitle = new Label("Drag to rotate · Ctrl + scroll to zoom");
             subtitle.setStyle(
                     "-fx-font-size: 13px;" +
                             "-fx-text-fill: #6b7280;"
@@ -202,23 +202,23 @@ public class SkinViewer3D {
             footer.setAlignment(Pos.CENTER_RIGHT);
             footer.setPadding(new Insets(14, 22, 20, 22));
 
-            Button resetBtn = new Button("Restablecer");
+            Button resetBtn = new Button("Reset");
             resetBtn.getStyleClass().add("secondary-button");
 
-            Button leftBtn = new Button("Girar izquierda");
+            Button leftBtn = new Button("Rotate left");
             leftBtn.getStyleClass().add("secondary-button");
 
-            Button rightBtn = new Button("Girar derecha");
+            Button rightBtn = new Button("Rotate right");
             rightBtn.getStyleClass().add("secondary-button");
 
-            Button closeBtn = new Button("Cerrar");
+            Button closeBtn = new Button("Close");
             closeBtn.getStyleClass().add("button");
 
-            CheckBox autoRotateBox = new CheckBox("Auto rotar");
+            CheckBox autoRotateBox = new CheckBox("Auto rotate");
             autoRotateBox.setStyle("-fx-text-fill: #374151; -fx-font-weight: 700;");
 
             ComboBox<String> backgroundBox = new ComboBox<String>();
-            backgroundBox.getItems().addAll("Claro", "Azul", "Oscuro");
+            backgroundBox.getItems().addAll("Light", "Blue", "Dark");
             backgroundBox.getSelectionModel().selectFirst();
             backgroundBox.setPrefWidth(110);
 
@@ -235,9 +235,9 @@ public class SkinViewer3D {
             backgroundBox.setOnAction(event -> {
                 String value = backgroundBox.getValue();
 
-                if ("Oscuro".equals(value)) {
+                if ("Dark".equals(value)) {
                     subScene.setFill(Color.web("#111827"));
-                } else if ("Azul".equals(value)) {
+                } else if ("Blue".equals(value)) {
                     subScene.setFill(Color.web("#eef2ff"));
                 } else {
                     subScene.setFill(Color.web("#f6f8fb"));
@@ -287,8 +287,8 @@ public class SkinViewer3D {
             ex.printStackTrace();
 
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Visor 3D");
-            alert.setHeaderText("No se pudo cargar el visor 3D");
+            alert.setTitle("3D Viewer");
+            alert.setHeaderText("Could not load 3D viewer");
             alert.setContentText(ex.getMessage());
             alert.showAndWait();
         }
@@ -312,7 +312,7 @@ public class SkinViewer3D {
         Image image = new Image(source, false);
 
         if (image.isError()) {
-            throw new Exception("No se pudo cargar la skin.");
+            throw new Exception("Could not load skin.");
         }
 
         return image;

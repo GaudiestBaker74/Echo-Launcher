@@ -67,14 +67,14 @@ public class FabricManager {
     }
 
     public static void install(final VersionEntry version,
-                               final String loaderVersion,
-                               final LauncherCallback callback) {
+            final String loaderVersion,
+            final LauncherCallback callback) {
         if (callback == null) {
             return;
         }
 
         if (version == null || version.id == null || version.id.trim().isEmpty()) {
-            callback.onError("Versión inválida.");
+            callback.onError("Invalid version");
             return;
         }
 
@@ -98,10 +98,11 @@ public class FabricManager {
         install(version, null, callback);
     }
 
-    private static void installSync(VersionEntry version, String selectedLoaderVersion, LauncherCallback callback) throws Exception {
+    private static void installSync(VersionEntry version, String selectedLoaderVersion, LauncherCallback callback)
+            throws Exception {
         String mcVersion = extractMinecraftVersion(version.id);
 
-        callback.onStatus("Buscando Fabric Loader para Minecraft " + mcVersion + "...");
+        callback.onStatus("Searching for Fabric Loader for Minecraft " + mcVersion + "...");
 
         String loaderVersion = selectedLoaderVersion;
 
@@ -109,7 +110,7 @@ public class FabricManager {
             List<FabricLoaderVersion> versions = getLoaderVersions(mcVersion);
 
             if (versions.isEmpty()) {
-                callback.onError("No se encontró Fabric Loader para Minecraft " + mcVersion);
+                callback.onError("Fabric Loader for Minecraft was not found: " + mcVersion);
                 return;
             }
 
@@ -129,7 +130,7 @@ public class FabricManager {
             loaderVersion = selected.version;
         }
 
-        callback.onStatus("Instalando Fabric Loader " + loaderVersion + " para Minecraft " + mcVersion + "...");
+        callback.onStatus("Installing Fabric Loader " + loaderVersion + " for Minecraft " + mcVersion + "...");
 
         String profileUrl = META_URL + "/versions/loader/" + mcVersion + "/" + loaderVersion + "/profile/json";
         String profileJson = readUrl(profileUrl);
@@ -137,7 +138,7 @@ public class FabricManager {
         JsonObject profile = JsonParser.parseString(profileJson).getAsJsonObject();
 
         if (!profile.has("id")) {
-            throw new Exception("El perfil de Fabric no contiene ID.");
+            throw new Exception("Fabric profile does not contain ID.");
         }
 
         String profileId = profile.get("id").getAsString();
@@ -145,13 +146,13 @@ public class FabricManager {
         File versionDir = new File(VersionManager.MC_DIR, "versions/" + profileId);
 
         if (!versionDir.exists() && !versionDir.mkdirs()) {
-            throw new Exception("No se pudo crear la carpeta: " + versionDir.getAbsolutePath());
+            throw new Exception("Could not create directory: " + versionDir.getAbsolutePath());
         }
 
         File jsonFile = new File(versionDir, profileId + ".json");
         writeFile(jsonFile, profileJson);
 
-        callback.onStatus("Perfil Fabric guardado: " + profileId);
+        callback.onStatus("Fabric Profile saved: " + profileId);
         callback.onSuccess(profileId);
     }
 
@@ -221,8 +222,7 @@ public class FabricManager {
 
     private static String readStream(InputStream stream) throws Exception {
         BufferedReader reader = new BufferedReader(
-                new InputStreamReader(stream, StandardCharsets.UTF_8)
-        );
+                new InputStreamReader(stream, StandardCharsets.UTF_8));
 
         StringBuilder sb = new StringBuilder();
 
@@ -243,7 +243,7 @@ public class FabricManager {
         File parent = file.getParentFile();
 
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
-            throw new Exception("No se pudo crear la carpeta: " + parent.getAbsolutePath());
+            throw new Exception("The folder could not be created: " + parent.getAbsolutePath());
         }
 
         FileOutputStream out = new FileOutputStream(file);

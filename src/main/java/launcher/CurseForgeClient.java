@@ -21,12 +21,6 @@ public class CurseForgeClient {
     private static final String USER_AGENT = "ProfessionalMinecraftLauncher/1.0";
     private static final int MINECRAFT_GAME_ID = 432;
 
-    /*
-     * CurseForge class IDs for Minecraft:
-     * Mods: 6
-     * Resource Packs: 12
-     * Shaders: 6552
-     */
     private static int getClassId(String projectType) {
         if ("resourcepack".equalsIgnoreCase(projectType)) {
             return 12;
@@ -57,8 +51,8 @@ public class CurseForgeClient {
     }
 
     public static List<ModrinthClient.ModResult> searchProjects(String apiKey,
-                                                                String query,
-                                                                String projectType) throws Exception {
+            String query,
+            String projectType) throws Exception {
         if (apiKey == null || apiKey.trim().isEmpty()) {
             throw new Exception("CurseForge API Key no configurada.");
         }
@@ -114,38 +108,37 @@ public class CurseForgeClient {
                         name,
                         summary,
                         "curseforge:" + id,
-                        projectType
-                );
+                        projectType);
 
                 result.iconUrl = iconUrl;
                 results.add(result);
             } catch (Exception ex) {
-                System.err.println("[CurseForge] Error parseando resultado: " + ex.getMessage());
+                System.err.println("[CurseForge] Error parsing result: " + ex.getMessage());
             }
         }
 
-        System.out.println("[CurseForge] Resultados encontrados: " + results.size() + " | tipo=" + projectType);
+        System.out.println("[CurseForge] Results found: " + results.size() + " | type=" + projectType);
 
         return results;
     }
 
     public static List<ModrinthClient.ModResult> searchPopularProjects(String apiKey,
-                                                                       String projectType) throws Exception {
+            String projectType) throws Exception {
         return searchProjects(apiKey, "", projectType);
     }
 
     public static ModrinthClient.ModVersionFile getLatestVersionFile(String apiKey,
-                                                                     String projectId,
-                                                                     String gameVersion,
-                                                                     String projectType) throws Exception {
+            String projectId,
+            String gameVersion,
+            String projectType) throws Exception {
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            throw new Exception("CurseForge API Key no configurada.");
+            throw new Exception("CurseForge API Key not configured.");
         }
 
         String numericId = stripCurseForgePrefix(projectId);
 
         if (numericId == null || numericId.trim().isEmpty()) {
-            throw new Exception("Project ID de CurseForge inválido.");
+            throw new Exception("Invalid CurseForge Project ID.");
         }
 
         if (projectType == null || projectType.trim().isEmpty()) {
@@ -167,7 +160,7 @@ public class CurseForgeClient {
         }
 
         if (files == null || files.size() == 0) {
-            throw new Exception("No se encontraron archivos descargables en CurseForge.");
+            throw new Exception("No downloadable files found on CurseForge.");
         }
 
         JsonObject selectedFile = selectBestFile(files, projectType);
@@ -181,7 +174,7 @@ public class CurseForgeClient {
         }
 
         if (downloadUrl == null || downloadUrl.trim().isEmpty()) {
-            throw new Exception("CurseForge no devolvió URL de descarga para " + fileName);
+            throw new Exception("CurseForge didn't return download URL for " + fileName);
         }
 
         List<String> dependencies = extractRequiredDependencies(selectedFile);
@@ -192,15 +185,14 @@ public class CurseForgeClient {
                 fileId,
                 "curseforge:" + numericId,
                 projectType,
-                dependencies
-        );
+                dependencies);
     }
 
     private static JsonArray requestFiles(String apiKey,
-                                          String numericProjectId,
-                                          String gameVersion,
-                                          String projectType,
-                                          boolean fabricOnly) throws Exception {
+            String numericProjectId,
+            String gameVersion,
+            String projectType,
+            boolean fabricOnly) throws Exception {
         StringBuilder url = new StringBuilder();
 
         url.append(API_BASE)
@@ -213,11 +205,6 @@ public class CurseForgeClient {
             url.append("&gameVersion=").append(encode(gameVersion.trim()));
         }
 
-        /*
-         * CurseForge modLoaderType:
-         * 4 = Fabric.
-         * Only apply to mods, not resource packs or shaders.
-         */
         if (fabricOnly && "mod".equalsIgnoreCase(projectType)) {
             url.append("&modLoaderType=4");
         }
@@ -240,11 +227,10 @@ public class CurseForgeClient {
             String fileName = getString(file, "fileName", "").toLowerCase();
             String downloadUrl = getString(file, "downloadUrl", "");
 
-            boolean extOk =
-                    ("mod".equalsIgnoreCase(projectType) && fileName.endsWith(".jar")) ||
-                            ("resourcepack".equalsIgnoreCase(projectType) && fileName.endsWith(".zip")) ||
-                            ("shader".equalsIgnoreCase(projectType) && fileName.endsWith(".zip")) ||
-                            ("modpack".equalsIgnoreCase(projectType) && fileName.endsWith(".zip"));
+            boolean extOk = ("mod".equalsIgnoreCase(projectType) && fileName.endsWith(".jar")) ||
+                    ("resourcepack".equalsIgnoreCase(projectType) && fileName.endsWith(".zip")) ||
+                    ("shader".equalsIgnoreCase(projectType) && fileName.endsWith(".zip")) ||
+                    ("modpack".equalsIgnoreCase(projectType) && fileName.endsWith(".zip"));
 
             if (!extOk) {
                 continue;
@@ -267,7 +253,7 @@ public class CurseForgeClient {
             return files.get(0).getAsJsonObject();
         }
 
-        throw new Exception("No hay archivos válidos.");
+        throw new Exception("No valid files found.");
     }
 
     private static List<String> extractRequiredDependencies(JsonObject file) {
@@ -285,10 +271,6 @@ public class CurseForgeClient {
 
                 int relationType = dep.has("relationType") ? dep.get("relationType").getAsInt() : -1;
 
-                /*
-                 * CurseForge relationType:
-                 * 3 = requiredDependency.
-                 */
                 if (relationType != 3) {
                     continue;
                 }
@@ -310,8 +292,8 @@ public class CurseForgeClient {
     }
 
     private static String requestDownloadUrl(String apiKey,
-                                             String numericProjectId,
-                                             String fileId) throws Exception {
+            String numericProjectId,
+            String fileId) throws Exception {
         if (fileId == null || fileId.trim().isEmpty()) {
             return "";
         }
@@ -333,21 +315,20 @@ public class CurseForgeClient {
             return response.get("data").getAsString();
         } catch (Exception ex) {
             throw new Exception(
-                    "No se pudo obtener la URL de descarga desde CurseForge. " +
-                            "Puede que el archivo no permita distribución externa o que la API Key no tenga acceso. " +
-                            ex.getMessage()
-            );
+                    "Could not get download URL from CurseForge. " +
+                            "The file may not allow external distribution or the API Key may not have access. " +
+                            ex.getMessage());
         }
     }
 
     private static JsonObject readJsonObject(String apiKey,
-                                             String urlString) throws Exception {
+            String urlString) throws Exception {
         String text = readUrl(apiKey, urlString);
         return JsonParser.parseString(text).getAsJsonObject();
     }
 
     private static String readUrl(String apiKey,
-                                  String urlString) throws Exception {
+            String urlString) throws Exception {
         System.out.println("[CurseForge] GET " + urlString);
 
         HttpURLConnection conn = null;
@@ -375,10 +356,9 @@ public class CurseForgeClient {
 
                 if (code == 401 || code == 403) {
                     throw new Exception(
-                            "CurseForge rechazó la petición con HTTP " + code + ". " +
-                                    "La API Key puede ser inválida, estar mal copiada o no tener permisos. " +
-                                    "Respuesta: " + errorBody
-                    );
+                            "CurseForge rejected request with HTTP " + code + ". " +
+                                    "The API Key may be invalid, incorrectly copied or lack permissions. " +
+                                    "Response: " + errorBody);
                 }
 
                 throw new Exception("CurseForge HTTP " + code + " - " + conn.getResponseMessage() + ". " + errorBody);
@@ -398,8 +378,7 @@ public class CurseForgeClient {
 
     private static String readStream(InputStream stream) throws Exception {
         BufferedReader reader = new BufferedReader(
-                new InputStreamReader(stream, StandardCharsets.UTF_8)
-        );
+                new InputStreamReader(stream, StandardCharsets.UTF_8));
 
         StringBuilder sb = new StringBuilder();
 
@@ -431,8 +410,8 @@ public class CurseForgeClient {
     }
 
     private static String getString(JsonObject obj,
-                                    String key,
-                                    String fallback) {
+            String key,
+            String fallback) {
         if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) {
             return fallback;
         }
@@ -445,9 +424,9 @@ public class CurseForgeClient {
     }
 
     public static List<ModrinthClient.ModVersionFile> getVersionFiles(String apiKey,
-                                                                      String projectId,
-                                                                      String gameVersion,
-                                                                      String projectType) throws Exception {
+            String projectId,
+            String gameVersion,
+            String projectType) throws Exception {
         String numericId = stripCurseForgePrefix(projectId);
 
         if (projectType == null || projectType.trim().isEmpty()) {
@@ -495,8 +474,7 @@ public class CurseForgeClient {
                         fileId,
                         "curseforge:" + numericId,
                         projectType,
-                        dependencies
-                );
+                        dependencies);
 
                 file.versionId = displayName;
 

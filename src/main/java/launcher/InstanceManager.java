@@ -65,7 +65,8 @@ public class InstanceManager {
                     instances.add(instance);
                 }
             } catch (Exception ex) {
-                System.err.println("[InstanceManager] Error leyendo instancia " + dir.getName() + ": " + ex.getMessage());
+                System.err
+                        .println("[InstanceManager] Error reading instance " + dir.getName() + ": " + ex.getMessage());
             } finally {
                 try {
                     if (reader != null) {
@@ -80,17 +81,16 @@ public class InstanceManager {
     }
 
     public static Instance createDefaultInstance() throws Exception {
-        File dir = new File(getBaseDir(), "Principal");
+        File dir = new File(getBaseDir(), "Main");
         File gameDir = new File(dir, "minecraft");
 
         Instance instance = new Instance(
-                "Principal",
+                "Main",
                 "Steve",
                 "",
                 "vanilla",
                 2,
-                gameDir.getAbsolutePath()
-        );
+                gameDir.getAbsolutePath());
 
         ensureInstanceFolders(instance);
         saveInstance(instance);
@@ -98,14 +98,15 @@ public class InstanceManager {
         return instance;
     }
 
-    public static Instance createInstance(String name, String username, String version, String type, int ram) throws Exception {
+    public static Instance createInstance(String name, String username, String version, String type, int ram)
+            throws Exception {
         String safe = safeName(name);
 
         File dir = new File(getBaseDir(), safe);
         File gameDir = new File(dir, "minecraft");
 
         if (dir.exists()) {
-            throw new Exception("Ya existe una instancia con ese nombre.");
+            throw new Exception("An instance with this name already exists.");
         }
 
         Instance instance = new Instance(
@@ -114,8 +115,7 @@ public class InstanceManager {
                 version,
                 type,
                 ram,
-                gameDir.getAbsolutePath()
-        );
+                gameDir.getAbsolutePath());
 
         ensureInstanceFolders(instance);
         saveInstance(instance);
@@ -125,7 +125,7 @@ public class InstanceManager {
 
     public static Instance duplicateInstance(Instance source, String newName) throws Exception {
         if (source == null) {
-            throw new Exception("No hay instancia seleccionada.");
+            throw new Exception("There is no instance selected.");
         }
 
         Instance copy = createInstance(
@@ -133,8 +133,7 @@ public class InstanceManager {
                 source.username,
                 source.version,
                 source.type,
-                source.ram
-        );
+                source.ram);
 
         copy.icon = source.icon;
         copy.notes = source.notes;
@@ -232,8 +231,7 @@ public class InstanceManager {
             java.nio.file.Files.copy(
                     source.toPath(),
                     target.toPath(),
-                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
-            );
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -257,17 +255,17 @@ public class InstanceManager {
 
     public static void exportInstance(Instance instance, File zipFile) throws Exception {
         if (instance == null) {
-            throw new Exception("No hay instancia seleccionada.");
+            throw new Exception("There is no instance selected.");
         }
 
         if (zipFile == null) {
-            throw new Exception("Archivo ZIP inválido.");
+            throw new Exception("Invalid ZIP file.");
         }
 
         File instanceDir = getInstanceDir(instance);
 
         if (!instanceDir.exists()) {
-            throw new Exception("La carpeta de la instancia no existe.");
+            throw new Exception("Instance folder does not exist.");
         }
 
         File parent = zipFile.getParentFile();
@@ -302,7 +300,7 @@ public class InstanceManager {
 
     public static Instance importInstance(File zipFile) throws Exception {
         if (zipFile == null || !zipFile.exists()) {
-            throw new Exception("ZIP de instancia inválido.");
+            throw new Exception("Invalid instance ZIP.");
         }
 
         String baseName = zipFile.getName();
@@ -340,7 +338,8 @@ public class InstanceManager {
             instance = new Instance();
         }
 
-        instance.name = makeUniqueInstanceName(instance.name == null || instance.name.trim().isEmpty() ? finalName : instance.name);
+        instance.name = makeUniqueInstanceName(
+                instance.name == null || instance.name.trim().isEmpty() ? finalName : instance.name);
         instance.gameDirPath = new File(targetDir, "minecraft").getAbsolutePath();
 
         ensureInstanceFolders(instance);
@@ -429,9 +428,9 @@ public class InstanceManager {
                 }
 
                 /*
-                 * Si el zip viene con carpeta raíz tipo:
-                 * MiInstancia/instance.json
-                 * intentamos normalizarlo.
+                 * If the zip comes with a root folder like:
+                 * MyInstance/instance.json
+                 * we try to normalize it.
                  */
                 name = normalizeImportedZipPath(name);
 
@@ -446,7 +445,7 @@ public class InstanceManager {
                 String outPath = outFile.getCanonicalPath();
 
                 if (!outPath.startsWith(targetPath + File.separator)) {
-                    throw new Exception("Entrada ZIP insegura: " + entry.getName());
+                    throw new Exception("Unsafe ZIP entry: " + entry.getName());
                 }
 
                 if (entry.isDirectory()) {

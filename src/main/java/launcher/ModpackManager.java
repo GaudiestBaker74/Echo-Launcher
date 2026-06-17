@@ -23,7 +23,7 @@ public class ModpackManager {
 
     public static Instance importModpack(File file, String curseForgeApiKey) throws Exception {
         if (file == null || !file.exists()) {
-            throw new Exception("Archivo de modpack inválido.");
+            throw new Exception("Invalid modpack file.");
         }
 
         if (isModrinthPack(file)) {
@@ -34,7 +34,7 @@ public class ModpackManager {
             return importCurseForgePack(file, curseForgeApiKey);
         }
 
-        throw new Exception("Formato de modpack no reconocido. Usa .mrpack o .zip de CurseForge.");
+        throw new Exception("Unrecognized modpack format. Use .mrpack or CurseForge .zip.");
     }
 
     private static boolean isModrinthPack(File file) {
@@ -74,7 +74,7 @@ public class ModpackManager {
             ZipEntry indexEntry = zip.getEntry("modrinth.index.json");
 
             if (indexEntry == null) {
-                throw new Exception("No se encontró modrinth.index.json.");
+                throw new Exception("modrinth.index.json not found.");
             }
 
             JsonObject index = JsonParser.parseReader(
@@ -90,7 +90,7 @@ public class ModpackManager {
             String fabricLoader = getString(dependencies, "fabric-loader", "");
 
             if (minecraftVersion.trim().isEmpty()) {
-                throw new Exception("El modpack no especifica versión de Minecraft.");
+                throw new Exception("The modpack does not specify a Minecraft version.");
             }
 
             String instanceName = makeUniqueInstanceName(name);
@@ -154,7 +154,7 @@ public class ModpackManager {
 
     private static Instance importCurseForgePack(File packFile, String apiKey) throws Exception {
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            throw new Exception("Para importar modpacks de CurseForge necesitas configurar la API Key.");
+            throw new Exception("To import CurseForge modpacks you need to configure the API Key.");
         }
 
         ZipFile zip = new ZipFile(packFile);
@@ -163,7 +163,7 @@ public class ModpackManager {
             ZipEntry manifestEntry = zip.getEntry("manifest.json");
 
             if (manifestEntry == null) {
-                throw new Exception("No se encontró manifest.json.");
+                throw new Exception("manifest.json not found.");
             }
 
             JsonObject manifest = JsonParser.parseReader(
@@ -176,7 +176,7 @@ public class ModpackManager {
             String minecraftVersion = getString(minecraft, "version", "");
 
             if (minecraftVersion.trim().isEmpty()) {
-                throw new Exception("El modpack no especifica versión de Minecraft.");
+                throw new Exception("The modpack does not specify a Minecraft version.");
             }
 
             String loaderId = "";
@@ -388,7 +388,7 @@ public class ModpackManager {
             int code = conn.getResponseCode();
 
             if (code < 200 || code >= 300) {
-                throw new Exception("HTTP " + code + " descargando " + urlStr);
+                throw new Exception("HTTP " + code + " downloading " + urlStr);
             }
 
             in = conn.getInputStream();
@@ -409,7 +409,7 @@ public class ModpackManager {
             }
 
             if (!tmp.renameTo(target)) {
-                throw new Exception("No se pudo mover archivo a " + target.getAbsolutePath());
+                throw new Exception("Could not move file to " + target.getAbsolutePath());
             }
         } finally {
             if (out != null) {
@@ -437,7 +437,7 @@ public class ModpackManager {
         String out = target.getCanonicalPath();
 
         if (!out.startsWith(base + File.separator)) {
-            throw new Exception("Ruta insegura en modpack: " + relativePath);
+            throw new Exception("Unsafe path in modpack: " + relativePath);
         }
 
         return target;

@@ -28,7 +28,6 @@ import java.nio.file.StandardCopyOption;
 import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -133,41 +132,39 @@ public class LauncherUI extends Application {
                         "Modrinth",
                         "/icons/modrinth.png",
                         "M",
-                        "provider-logo-modrinth"
-                ),
+                        "provider-logo-modrinth"),
                 new ContentProviderOption(
                         "curseforge",
                         "CurseForge",
                         "/icons/curseforge.png",
                         "C",
-                        "provider-logo-curseforge"
-                )
-        );
+                        "provider-logo-curseforge"));
 
         providerBox.getSelectionModel().selectFirst();
         providerBox.setPrefWidth(170);
         providerBox.getStyleClass().add("provider-combo");
 
-        providerBox.setCellFactory(new javafx.util.Callback<ListView<ContentProviderOption>, ListCell<ContentProviderOption>>() {
-            @Override
-            public ListCell<ContentProviderOption> call(ListView<ContentProviderOption> listView) {
-                return new ListCell<ContentProviderOption>() {
+        providerBox.setCellFactory(
+                new javafx.util.Callback<ListView<ContentProviderOption>, ListCell<ContentProviderOption>>() {
                     @Override
-                    protected void updateItem(ContentProviderOption item, boolean empty) {
-                        super.updateItem(item, empty);
+                    public ListCell<ContentProviderOption> call(ListView<ContentProviderOption> listView) {
+                        return new ListCell<ContentProviderOption>() {
+                            @Override
+                            protected void updateItem(ContentProviderOption item, boolean empty) {
+                                super.updateItem(item, empty);
 
-                        if (empty || item == null) {
-                            setText(null);
-                            setGraphic(null);
-                            return;
-                        }
+                                if (empty || item == null) {
+                                    setText(null);
+                                    setGraphic(null);
+                                    return;
+                                }
 
-                        setText(null);
-                        setGraphic(createProviderGraphic(item));
+                                setText(null);
+                                setGraphic(createProviderGraphic(item));
+                            }
+                        };
                     }
-                };
-            }
-        });
+                });
 
         providerBox.setButtonCell(new ListCell<ContentProviderOption>() {
             @Override
@@ -251,15 +248,13 @@ public class LauncherUI extends Application {
 
         key = key.trim();
 
-        // Por si el usuario pegó la clave con comillas.
         if ((key.startsWith("\"") && key.endsWith("\"")) ||
                 (key.startsWith("'") && key.endsWith("'"))) {
             key = key.substring(1, key.length() - 1).trim();
         }
 
-        // Por si pegó algo tipo: Bearer XXXXX
-        if (key.toLowerCase().startsWith("bearer ")) {
-            key = key.substring("bearer ".length()).trim();
+        if (key.toLowerCase().startsWith("bearer")) {
+            key = key.substring("bearer".length()).trim();
         }
 
         return key;
@@ -283,8 +278,8 @@ public class LauncherUI extends Application {
             key = key.substring(1, key.length() - 1).trim();
         }
 
-        if (key.toLowerCase().startsWith("bearer ")) {
-            key = key.substring("bearer ".length()).trim();
+        if (key.toLowerCase().startsWith("bearer")) {
+            key = key.substring("bearer".length()).trim();
         }
 
         prefs.put("curseforgeApiKey", key);
@@ -303,11 +298,11 @@ public class LauncherUI extends Application {
     private void showCurseForgeApiKeyDialog() {
         final Dialog<String> dialog = new Dialog<String>();
         dialog.setTitle("CurseForge API Key");
-        dialog.setHeaderText("Configurar API Key de CurseForge");
+        dialog.setHeaderText("Configure CurseForge API Key");
 
-        ButtonType saveButton = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
-        ButtonType removeButton = new ButtonType("Eliminar clave", ButtonBar.ButtonData.LEFT);
-        ButtonType cancelButton = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType saveButton = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
+        ButtonType removeButton = new ButtonType("Delete key", ButtonBar.ButtonData.LEFT);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         dialog.getDialogPane().getButtonTypes().addAll(saveButton, removeButton, cancelButton);
 
@@ -316,9 +311,8 @@ public class LauncherUI extends Application {
         root.setPrefWidth(480);
 
         Label info = new Label(
-                "Introduce tu API Key oficial de CurseForge.\n\n" +
-                        "Esta clave será necesaria para buscar y descargar contenido desde CurseForge."
-        );
+                "Enter your official CurseForge API Key.\n\n" +
+                        "This key will be needed to search and download content from CurseForge.");
         info.setWrapText(true);
         info.setStyle("-fx-text-fill: #374151; -fx-font-size: 13px;");
 
@@ -338,7 +332,7 @@ public class LauncherUI extends Application {
 
         visibleKeyField.textProperty().bindBidirectional(keyField.textProperty());
 
-        CheckBox showKeyCheck = new CheckBox("Mostrar clave");
+        CheckBox showKeyCheck = new CheckBox("Show key");
         showKeyCheck.setStyle("-fx-text-fill: #374151;");
 
         showKeyCheck.selectedProperty().addListener(new ChangeListener<Boolean>() {
@@ -355,8 +349,7 @@ public class LauncherUI extends Application {
         });
 
         Label warning = new Label(
-                "No compartas esta clave públicamente."
-        );
+                "Do not share this key publicly.");
         warning.setWrapText(true);
         warning.setStyle("-fx-text-fill: #b45309; -fx-font-size: 12px;");
 
@@ -394,12 +387,12 @@ public class LauncherUI extends Application {
 
         if ("__REMOVE__".equals(value)) {
             prefs.remove("curseforgeApiKey");
-            statusLabel.setText("Clave de CurseForge eliminada.");
+            statusLabel.setText("CurseForge key removed.");
             return;
         }
 
         if (value == null || value.trim().isEmpty()) {
-            statusLabel.setText("No se guardó ninguna clave de CurseForge.");
+            statusLabel.setText("No CurseForge key was saved.");
             return;
         }
 
@@ -407,28 +400,28 @@ public class LauncherUI extends Application {
 
         try {
             CurseForgeClient.validateApiKey(getCurseForgeApiKey());
-            statusLabel.setText("Clave de CurseForge guardada y validada correctamente.");
+            statusLabel.setText("CurseForge key saved and validated successfully.");
         } catch (Exception ex) {
-            statusLabel.setText("Clave guardada, pero CurseForge la rechazó: " + ex.getMessage());
+            statusLabel.setText("Key saved, but CurseForge rejected it:" + ex.getMessage());
         }
     }
 
     private void loadProviderPopularContent(final ComboBox<ContentProviderOption> providerBox,
-                                            final ComboBox<String> typeBox,
-                                            final ListView<ModrinthClient.ModResult> resultsList,
-                                            final Button searchBtn,
-                                            final Button installBtn,
-                                            final Label status) {
+            final ComboBox<String> typeBox,
+            final ListView<ModrinthClient.ModResult> resultsList,
+            final Button searchBtn,
+            final Button installBtn,
+            final Label status) {
         final ContentProviderOption provider = providerBox.getValue();
 
         if (isCurseForgeProvider(provider)) {
             if (!hasCurseForgeApiKey()) {
                 resultsList.getItems().clear();
-                installBtn.setText("Instalar seleccionado");
+                installBtn.setText("Install selected");
                 installBtn.setDisable(true);
                 searchBtn.setDisable(false);
 
-                status.setText("CurseForge seleccionado. Configura tu API Key para habilitar búsquedas.");
+                status.setText("Selected CurseForge. Configure your API Key to enable searches.");
                 return;
             }
 
@@ -436,18 +429,18 @@ public class LauncherUI extends Application {
             final String type = getSelectedContentType(typeBox);
 
             resultsList.getItems().clear();
-            installBtn.setText("Instalar seleccionado");
+            installBtn.setText("Install selected");
             installBtn.setDisable(true);
             searchBtn.setDisable(true);
 
-            status.setText("Cargando contenido popular de CurseForge...");
+            status.setText("Loading popular CurseForge content...");
 
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        final List<ModrinthClient.ModResult> results =
-                                CurseForgeClient.searchPopularProjects(apiKey, type);
+                        final List<ModrinthClient.ModResult> results = CurseForgeClient.searchPopularProjects(apiKey,
+                                type);
 
                         Platform.runLater(new Runnable() {
                             @Override
@@ -456,9 +449,9 @@ public class LauncherUI extends Application {
                                 searchBtn.setDisable(false);
 
                                 if (results.isEmpty()) {
-                                    status.setText("No se encontraron resultados en CurseForge.");
+                                    status.setText("No results found on CurseForge.");
                                 } else {
-                                    status.setText("Mostrando " + results.size() + " resultados populares de CurseForge.");
+                                    status.setText("Showing" + results.size() + "popular CurseForge results.");
                                 }
                             }
                         });
@@ -467,7 +460,7 @@ public class LauncherUI extends Application {
                             @Override
                             public void run() {
                                 searchBtn.setDisable(false);
-                                status.setText("Error cargando CurseForge: " + ex.getMessage());
+                                status.setText("Error loading CurseForge:" + ex.getMessage());
                             }
                         });
                     }
@@ -483,18 +476,17 @@ public class LauncherUI extends Application {
         final String type = getSelectedContentType(typeBox);
 
         resultsList.getItems().clear();
-        installBtn.setText("Instalar seleccionado");
+        installBtn.setText("Install selected");
         installBtn.setDisable(true);
         searchBtn.setDisable(true);
 
-        status.setText("Cargando contenido popular de Modrinth...");
+        status.setText("Loading popular Modrinth content...");
 
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    final List<ModrinthClient.ModResult> results =
-                            ModrinthClient.searchPopularProjects(type);
+                    final List<ModrinthClient.ModResult> results = ModrinthClient.searchPopularProjects(type);
 
                     Platform.runLater(new Runnable() {
                         @Override
@@ -503,9 +495,9 @@ public class LauncherUI extends Application {
                             searchBtn.setDisable(false);
 
                             if (results.isEmpty()) {
-                                status.setText("No se encontraron resultados en Modrinth.");
+                                status.setText("No results found in Modrinth.");
                             } else {
-                                status.setText("Mostrando " + results.size() + " resultados populares de Modrinth.");
+                                status.setText("Showing" + results.size() + "popular Modrinth results.");
                             }
                         }
                     });
@@ -514,7 +506,7 @@ public class LauncherUI extends Application {
                         @Override
                         public void run() {
                             searchBtn.setDisable(false);
-                            status.setText("Error cargando Modrinth: " + ex.getMessage());
+                            status.setText("Error loading Modrinth:" + ex.getMessage());
                         }
                     });
                 }
@@ -537,15 +529,13 @@ public class LauncherUI extends Application {
             logWriter = new PrintWriter(
                     new java.io.OutputStreamWriter(
                             new java.io.FileOutputStream(logFile, false),
-                            java.nio.charset.StandardCharsets.UTF_8
-                    )
-            );
+                            java.nio.charset.StandardCharsets.UTF_8));
             logWriter.println("=== Launcher started at " + java.time.LocalDateTime.now() + " ===");
             logWriter.flush();
-            
+
             // Set up global exception handler
             Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-                logWriter.println("UNCAUGHT EXCEPTION in thread " + t.getName() + ":");
+                logWriter.println("UNCAUGHT EXCEPTION in thread" + t.getName() + ":");
                 e.printStackTrace(logWriter);
                 logWriter.flush();
             });
@@ -570,7 +560,7 @@ public class LauncherUI extends Application {
             dropOverlay.setVisible(false);
             dropOverlay.setMouseTransparent(true);
 
-            Label dropLabel = new Label("Suelta el modpack para importarlo");
+            Label dropLabel = new Label("Drop the modpack to import it");
             dropLabel.getStyleClass().add("drop-overlay-label");
 
             dropOverlay.getChildren().add(dropLabel);
@@ -595,13 +585,13 @@ public class LauncherUI extends Application {
             titleBox.getStyleClass().add("brand-box");
             titleBox.setPadding(new Insets(0, 0, 10, 0));
 
-        // Avatar & Username
-        HBox userBox = new HBox(15);
-        userBox.setAlignment(Pos.CENTER_LEFT);
+            // Avatar & Username
+            HBox userBox = new HBox(15);
+            userBox.setAlignment(Pos.CENTER_LEFT);
 
-        avatarView = new ImageView();
-        avatarView.setFitWidth(64);
-        avatarView.setFitHeight(64);
+            avatarView = new ImageView();
+            avatarView.setFitWidth(64);
+            avatarView.setFitHeight(64);
 
             VBox instancePane = new VBox(10);
             instancePane.getStyleClass().add("instance-panel");
@@ -611,13 +601,13 @@ public class LauncherUI extends Application {
             HBox instanceHeader = new HBox(8);
             instanceHeader.setAlignment(Pos.CENTER_LEFT);
 
-            Label instanceLabel = new Label("Instancias");
+            Label instanceLabel = new Label("Instances");
             instanceLabel.getStyleClass().add("header-label");
 
             Region instanceHeaderSpacer = new Region();
             HBox.setHgrow(instanceHeaderSpacer, Priority.ALWAYS);
 
-            Button openInstanceFolderBtn = new Button("Carpeta");
+            Button openInstanceFolderBtn = new Button("Folder");
             openInstanceFolderBtn.getStyleClass().add("secondary-button");
 
             instanceHeader.getChildren().addAll(instanceLabel, instanceHeaderSpacer, openInstanceFolderBtn);
@@ -629,12 +619,12 @@ public class LauncherUI extends Application {
 
             HBox instanceActions1 = new HBox(8);
 
-            Button newInstanceBtn = new Button("Nueva");
+            Button newInstanceBtn = new Button("New");
             newInstanceBtn.getStyleClass().add("button");
             newInstanceBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(newInstanceBtn, Priority.ALWAYS);
 
-            Button saveInstanceBtn = new Button("Guardar");
+            Button saveInstanceBtn = new Button("Save");
             saveInstanceBtn.getStyleClass().add("secondary-button");
             saveInstanceBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(saveInstanceBtn, Priority.ALWAYS);
@@ -643,12 +633,12 @@ public class LauncherUI extends Application {
 
             HBox instanceActions2 = new HBox(8);
 
-            Button duplicateInstanceBtn = new Button("Duplicar");
+            Button duplicateInstanceBtn = new Button("Duplicate");
             duplicateInstanceBtn.getStyleClass().add("secondary-button");
             duplicateInstanceBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(duplicateInstanceBtn, Priority.ALWAYS);
 
-            Button deleteInstanceBtn = new Button("Eliminar");
+            Button deleteInstanceBtn = new Button("Delete");
             deleteInstanceBtn.getStyleClass().add("secondary-button");
             deleteInstanceBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(deleteInstanceBtn, Priority.ALWAYS);
@@ -657,17 +647,17 @@ public class LauncherUI extends Application {
 
             HBox instanceActions3 = new HBox(8);
 
-            Button editInstanceBtn = new Button("Editar");
+            Button editInstanceBtn = new Button("Edit");
             editInstanceBtn.getStyleClass().add("secondary-button");
             editInstanceBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(editInstanceBtn, Priority.ALWAYS);
 
-            Button importInstanceBtn = new Button("Importar");
+            Button importInstanceBtn = new Button("Import");
             importInstanceBtn.getStyleClass().add("secondary-button");
             importInstanceBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(importInstanceBtn, Priority.ALWAYS);
 
-            Button exportInstanceBtn = new Button("Exportar");
+            Button exportInstanceBtn = new Button("Export");
             exportInstanceBtn.getStyleClass().add("secondary-button");
             exportInstanceBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(exportInstanceBtn, Priority.ALWAYS);
@@ -679,8 +669,7 @@ public class LauncherUI extends Application {
                     instanceCardsBox,
                     instanceActions1,
                     instanceActions2,
-                    instanceActions3
-            );
+                    instanceActions3);
 
             newInstanceBtn.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
@@ -738,7 +727,7 @@ public class LauncherUI extends Application {
                         Instance instance = getCurrentInstance();
 
                         if (instance == null) {
-                            statusLabel.setText("No hay instancia seleccionada.");
+                            statusLabel.setText("There is no instance selected.");
                             return;
                         }
 
@@ -749,20 +738,20 @@ public class LauncherUI extends Application {
                             Desktop.getDesktop().open(dir);
                         }
                     } catch (Exception ex) {
-                        statusLabel.setText("No se pudo abrir carpeta de instancia: " + ex.getMessage());
+                        statusLabel.setText("Could not open instance folder:" + ex.getMessage());
                     }
                 }
             });
 
-        // Wrap avatar to give it a border via CSS
-        StackPane avatarContainer = new StackPane(avatarView);
-        avatarContainer.getStyleClass().add("avatar-border");
-        avatarContainer.setMaxSize(68, 68);
+            // Wrap avatar to give it a border via CSS
+            StackPane avatarContainer = new StackPane(avatarView);
+            avatarContainer.getStyleClass().add("avatar-border");
+            avatarContainer.setMaxSize(68, 68);
 
-        usernameField = new TextField();
-        usernameField.setPromptText("Nombre de Usuario");
-        usernameField.getStyleClass().add("user-field");
-        HBox.setHgrow(usernameField, Priority.ALWAYS);
+            usernameField = new TextField();
+            usernameField.setPromptText("Username");
+            usernameField.getStyleClass().add("user-field");
+            HBox.setHgrow(usernameField, Priority.ALWAYS);
 
             usernameField.textProperty().addListener(new ChangeListener<String>() {
                 @Override
@@ -772,7 +761,7 @@ public class LauncherUI extends Application {
                     String name = newV == null || newV.trim().isEmpty() ? "Steve" : newV.trim();
 
                     if (heroUserLabel != null) {
-                        heroUserLabel.setText("Usuario: " + name);
+                        heroUserLabel.setText("User:" + name);
                     }
 
                     if (topUserLabel != null) {
@@ -781,40 +770,40 @@ public class LauncherUI extends Application {
                 }
             });
 
-        avatarContainer.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                show3DSkinViewer();
-            }
-        });
-        avatarContainer.setCursor(javafx.scene.Cursor.HAND);
+            avatarContainer.setOnMouseClicked(new EventHandler<MouseEvent>() {
+                @Override
+                public void handle(MouseEvent event) {
+                    show3DSkinViewer();
+                }
+            });
+            avatarContainer.setCursor(javafx.scene.Cursor.HAND);
 
-        userBox.getChildren().addAll(avatarContainer, usernameField);
+            userBox.getChildren().addAll(avatarContainer, usernameField);
 
             // Profiles
             VBox profilesPane = new VBox(8);
             profilesPane.getStyleClass().add("profile-panel");
 
-            Label profilesLabel = new Label("Perfil");
+            Label profilesLabel = new Label("Profile");
             profilesLabel.getStyleClass().add("header-label");
 
             profileBox = new ComboBox<Profile>();
             profileBox.setMaxWidth(Double.MAX_VALUE);
-            profileBox.setPromptText("Seleccionar perfil");
+            profileBox.setPromptText("Select profile");
 
             HBox profileActions = new HBox(8);
 
-            Button newProfileBtn = new Button("Nuevo");
+            Button newProfileBtn = new Button("New");
             newProfileBtn.getStyleClass().add("secondary-button");
             newProfileBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(newProfileBtn, Priority.ALWAYS);
 
-            Button saveProfileBtn = new Button("Guardar");
+            Button saveProfileBtn = new Button("Save");
             saveProfileBtn.getStyleClass().add("button");
             saveProfileBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(saveProfileBtn, Priority.ALWAYS);
 
-            Button deleteProfileBtn = new Button("Eliminar");
+            Button deleteProfileBtn = new Button("Delete");
             deleteProfileBtn.getStyleClass().add("secondary-button");
             deleteProfileBtn.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(deleteProfileBtn, Priority.ALWAYS);
@@ -852,26 +841,26 @@ public class LauncherUI extends Application {
                 }
             });
 
-        // RAM Slider
-// RAM Card
+            // RAM Slider
+            // RAM Card
             VBox ramBox = new VBox(10);
             ramBox.getStyleClass().add("ram-card");
 
             HBox ramHeader = new HBox(10);
             ramHeader.setAlignment(Pos.CENTER_LEFT);
 
-            Label ramTitle = new Label("Memoria RAM");
+            Label ramTitle = new Label("RAM memory");
             ramTitle.getStyleClass().add("ram-title");
 
             Region ramSpacer = new Region();
             HBox.setHgrow(ramSpacer, Priority.ALWAYS);
 
-            final Label ramValueLabel = new Label("2 GB");
+            final Label ramValueLabel = new Label("2GB");
             ramValueLabel.getStyleClass().add("ram-value");
 
             ramHeader.getChildren().addAll(ramTitle, ramSpacer, ramValueLabel);
 
-            Label ramHint = new Label("Recomendado: 4-6 GB para mods y shaders.");
+            Label ramHint = new Label("Recommended: 4-6 GB for mods and shaders.");
             ramHint.getStyleClass().add("ram-hint");
             ramHint.setWrapText(true);
 
@@ -887,13 +876,13 @@ public class LauncherUI extends Application {
             HBox ramScale = new HBox();
             ramScale.setAlignment(Pos.CENTER);
 
-            Label ramMin = new Label("1 GB");
+            Label ramMin = new Label("1GB");
             ramMin.getStyleClass().add("ram-scale-label");
 
             Region ramScaleSpacer = new Region();
             HBox.setHgrow(ramScaleSpacer, Priority.ALWAYS);
 
-            Label ramMax = new Label("16 GB");
+            Label ramMax = new Label("16GB");
             ramMax.getStyleClass().add("ram-scale-label");
 
             ramScale.getChildren().addAll(ramMin, ramScaleSpacer, ramMax);
@@ -902,24 +891,24 @@ public class LauncherUI extends Application {
                 @Override
                 public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                     int ramGb = newValue.intValue();
-                    ramValueLabel.setText(ramGb + " GB");
+                    ramValueLabel.setText(ramGb + "GB");
 
                     if (ramGb <= 2) {
-                        ramHint.setText("Ligero: ideal para vanilla o pocos mods.");
+                        ramHint.setText("Light: ideal for vanilla or few mods.");
                     } else if (ramGb <= 6) {
-                        ramHint.setText("Recomendado: buena opción para Fabric, mods y shaders moderados.");
+                        ramHint.setText("Recommended: Good choice for Fabric, mods and moderate shaders.");
                     } else if (ramGb <= 10) {
-                        ramHint.setText("Alto: útil para packs grandes o shaders pesados.");
+                        ramHint.setText("High: useful for large packs or heavy shaders.");
                     } else {
-                        ramHint.setText("Muy alto: úsalo solo si tu PC tiene bastante RAM libre.");
+                        ramHint.setText("Very high: only use it if your PC has plenty of free RAM.");
                     }
                 }
             });
 
             ramBox.getChildren().addAll(ramHeader, ramSlider, ramScale, ramHint);
 
-// Tools / Viewers
-            Label toolsLabel = new Label("Herramientas");
+            // Tools / Viewers
+            Label toolsLabel = new Label("Tools");
             toolsLabel.getStyleClass().add("header-label");
 
             VBox toolsContainer = new VBox(10);
@@ -927,27 +916,23 @@ public class LauncherUI extends Application {
 
             VBox modsCard = createToolCard(
                     "Mods",
-                    "Gestiona los mods instalados",
-                    "📦"
-            );
+                    "Manage installed mods",
+                    "📦");
 
             VBox searchModsCard = createToolCard(
-                    "Buscar",
-                    "Descarga mods de Modrinth",
-                    "🔎"
-            );
+                    "Look for",
+                    "Download Modrinth mods",
+                    "🔎");
 
             VBox graphicsCard = createToolCard(
-                    "Pack gráfico",
-                    "Shaders, Sodium e Iris",
-                    "✨"
-            );
+                    "Graphic pack",
+                    "Shaders, Sodium and Iris",
+                    "✨");
 
             VBox cosmeticsCard = createToolCard(
-                    "Cosméticos",
-                    "Skins, capas y visor 3D",
-                    "🧍"
-            );
+                    "Cosmetics",
+                    "Skins, layers and 3D viewer",
+                    "🧍");
 
             HBox toolsRow1 = new HBox(10);
             HBox toolsRow2 = new HBox(10);
@@ -990,10 +975,10 @@ public class LauncherUI extends Application {
                 }
             });
 
-        Region r1 = new Region();
-        r1.setMinHeight(4);
-        Region r2 = new Region();
-        r2.setMinHeight(4);
+            Region r1 = new Region();
+            r1.setMinHeight(4);
+            Region r2 = new Region();
+            r2.setMinHeight(4);
             leftPanel.getChildren().addAll(
                     titleBox,
                     instancePane,
@@ -1002,25 +987,41 @@ public class LauncherUI extends Application {
                     ramBox,
                     r2,
                     toolsLabel,
-                    toolsContainer
-            );
+                    toolsContainer);
 
-        // --- RIGHT PANEL (Launch & Output) ---
-// --- RIGHT PANEL (Modern Dashboard) ---
+            // --- RIGHT PANEL (Launch & Output) ---
+            // --- RIGHT PANEL (Modern Dashboard) ---
             HBox topBar = new HBox(12);
             topBar.getStyleClass().add("top-bar");
             topBar.setAlignment(Pos.CENTER_LEFT);
             topBar.setMaxWidth(Double.MAX_VALUE);
 
-            VBox brandBox = new VBox(-2);
+            ImageView appLogoView = new ImageView();
 
-            Label brandTitle = new Label("Minecraft");
+            try {
+                Image logo = new Image(getClass().getResourceAsStream("/icons/logo.png"));
+                appLogoView.setImage(logo);
+            } catch (Exception ignored) {
+            }
+
+            appLogoView.setFitWidth(42);
+            appLogoView.setFitHeight(42);
+            appLogoView.setPreserveRatio(true);
+            appLogoView.setSmooth(true);
+
+            VBox brandTextBox = new VBox(-2);
+
+            Label brandTitle = new Label("Echo");
             brandTitle.getStyleClass().add("top-brand-title");
 
             Label brandSubtitle = new Label("Launcher");
             brandSubtitle.getStyleClass().add("top-brand-subtitle");
 
-            brandBox.getChildren().addAll(brandTitle, brandSubtitle);
+            brandTextBox.getChildren().addAll(brandTitle, brandSubtitle);
+
+            HBox brandBox = new HBox(10);
+            brandBox.setAlignment(Pos.CENTER_LEFT);
+            brandBox.getChildren().addAll(appLogoView, brandTextBox);
 
             Region topSpacer = new Region();
             HBox.setHgrow(topSpacer, Priority.ALWAYS);
@@ -1028,28 +1029,28 @@ public class LauncherUI extends Application {
             topUserLabel = new Label("Steve");
             topUserLabel.getStyleClass().add("top-user-pill");
 
-            topInstanceBtn = new Button("Instancias");
+            topInstanceBtn = new Button("Instances");
             topInstanceBtn.getStyleClass().add("top-nav-button");
 
             Button topModsBtn = new Button("Mods");
             topModsBtn.getStyleClass().add("top-nav-button");
 
-            Button topSearchBtn = new Button("Buscar");
+            Button topSearchBtn = new Button("Look for");
             topSearchBtn.getStyleClass().add("top-nav-button");
 
-            Button topGraphicsBtn = new Button("Gráficos");
+            Button topGraphicsBtn = new Button("Graphics");
             topGraphicsBtn.getStyleClass().add("top-nav-button");
 
             Button topSkinsBtn = new Button("Skins");
             topSkinsBtn.getStyleClass().add("top-nav-button");
 
-            Button topWorldsBtn = new Button("Mundos");
+            Button topWorldsBtn = new Button("Worlds");
             topWorldsBtn.getStyleClass().add("top-nav-button");
 
-            Button topScreenshotsBtn = new Button("Capturas");
+            Button topScreenshotsBtn = new Button("Captures");
             topScreenshotsBtn.getStyleClass().add("top-nav-button");
 
-            Button topSettingsBtn = new Button("Ajustes");
+            Button topSettingsBtn = new Button("Settings");
             topSettingsBtn.getStyleClass().add("top-nav-button");
 
             topInstanceBtn.setOnAction(new EventHandler<ActionEvent>() {
@@ -1112,8 +1113,7 @@ public class LauncherUI extends Application {
                     topSkinsBtn,
                     topWorldsBtn,
                     topScreenshotsBtn,
-                    topSettingsBtn
-            );
+                    topSettingsBtn);
 
             topSettingsBtn.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
@@ -1122,7 +1122,7 @@ public class LauncherUI extends Application {
                 }
             });
 
-// ================= HERO CARD PREMIUM =================
+            // ================= HERO CARD PREMIUM =================
             VBox heroCard = new VBox(16);
             heroCard.getStyleClass().add("premium-hero-card");
             heroCard.setMaxWidth(Double.MAX_VALUE);
@@ -1136,19 +1136,19 @@ public class LauncherUI extends Application {
             VBox heroTextBox = new VBox(5);
             HBox.setHgrow(heroTextBox, Priority.ALWAYS);
 
-            Label heroSmallTitle = new Label("Instancia actual");
+            Label heroSmallTitle = new Label("Current instance");
             heroSmallTitle.getStyleClass().add("hero-small-title");
 
-            heroInstanceNameLabel = new Label("Principal");
+            heroInstanceNameLabel = new Label("Main");
             heroInstanceNameLabel.getStyleClass().add("premium-hero-title");
 
-            heroInstanceMetaLabel = new Label("Sin versión · 2 GB RAM");
+            heroInstanceMetaLabel = new Label("No version · 2 GB RAM");
             heroInstanceMetaLabel.getStyleClass().add("premium-hero-meta");
 
-            heroInstanceModsLabel = new Label("0 mods activos");
+            heroInstanceModsLabel = new Label("0 active mods");
             heroInstanceModsLabel.getStyleClass().add("hero-pill");
 
-            heroUserLabel = new Label("Usuario: Steve");
+            heroUserLabel = new Label("User: Steve");
             heroUserLabel.getStyleClass().add("hero-user");
 
             heroTextBox.getChildren().addAll(
@@ -1156,10 +1156,9 @@ public class LauncherUI extends Application {
                     heroInstanceNameLabel,
                     heroInstanceMetaLabel,
                     heroInstanceModsLabel,
-                    heroUserLabel
-            );
+                    heroUserLabel);
 
-            Button playButton = new Button("Jugar");
+            Button playButton = new Button("Play");
             playButton.getStyleClass().add("premium-play-button");
             playButton.setPrefWidth(130);
             playButton.setPrefHeight(46);
@@ -1172,20 +1171,20 @@ public class LauncherUI extends Application {
 
             heroTop.getChildren().addAll(heroInstanceIconLabel, heroTextBox, playButton);
 
-// Stats row
+            // Stats row
             HBox statsRow = new HBox(12);
             statsRow.setAlignment(Pos.CENTER_LEFT);
 
-            VBox statusStat = createDashboardStatCard("Estado", "Listo");
+            VBox statusStat = createDashboardStatCard("State", "Ready");
             dashboardGameStatusLabel = (Label) statusStat.getChildren().get(1);
 
-            VBox lastPlayedStat = createDashboardStatCard("Última vez", "Nunca");
+            VBox lastPlayedStat = createDashboardStatCard("Last time", "Never");
             dashboardLastPlayedLabel = (Label) lastPlayedStat.getChildren().get(1);
 
-            VBox playTimeStat = createDashboardStatCard("Tiempo jugado", "0 min");
+            VBox playTimeStat = createDashboardStatCard("Time played", "0 min");
             dashboardPlayTimeLabel = (Label) playTimeStat.getChildren().get(1);
 
-            VBox contentStat = createDashboardStatCard("Contenido", "0 mods · 0 shaders · 0 texturas");
+            VBox contentStat = createDashboardStatCard("Content", "0 mods · 0 shaders · 0 textures");
             dashboardContentStatsLabel = (Label) contentStat.getChildren().get(1);
 
             HBox.setHgrow(statusStat, Priority.ALWAYS);
@@ -1197,7 +1196,7 @@ public class LauncherUI extends Application {
 
             heroCard.getChildren().addAll(heroTop, statsRow);
 
-// ================= VERSION CARD =================
+            // ================= VERSION CARD =================
             VBox versionCard = new VBox(12);
             versionCard.getStyleClass().add("dashboard-card");
             versionCard.setMaxWidth(Double.MAX_VALUE);
@@ -1205,19 +1204,19 @@ public class LauncherUI extends Application {
             HBox versionHead = new HBox(10);
             versionHead.setAlignment(Pos.CENTER_LEFT);
 
-            Label versionLabel = new Label("Versión");
+            Label versionLabel = new Label("Version");
             versionLabel.getStyleClass().add("dashboard-card-title");
 
             Region versionSpacer = new Region();
             HBox.setHgrow(versionSpacer, Priority.ALWAYS);
 
             final ComboBox<String> versionFilterBox = new ComboBox<String>();
-            versionFilterBox.getItems().addAll("Todas", "Instaladas", "Fabric", "Vanilla");
+            versionFilterBox.getItems().addAll("All", "Installed", "Fabric", "Vanilla");
             versionFilterBox.getSelectionModel().selectFirst();
             versionFilterBox.setPrefWidth(130);
 
             final TextField searchField = new TextField();
-            searchField.setPromptText("Buscar versión...");
+            searchField.setPromptText("Search version...");
             searchField.setPrefWidth(180);
             searchField.getStyleClass().add("dashboard-search");
 
@@ -1228,28 +1227,28 @@ public class LauncherUI extends Application {
 
             versionBox = new ComboBox<VersionEntry>();
             versionBox.setMaxWidth(Double.MAX_VALUE);
-            versionBox.setPromptText("Cargando versiones...");
+            versionBox.setPromptText("Loading versions...");
             HBox.setHgrow(versionBox, Priority.ALWAYS);
 
             final Button fabricBtn = new Button("Fabric");
             fabricBtn.getStyleClass().add("secondary-button");
 
-            final Button repairBtn = new Button("Reparar");
+            final Button repairBtn = new Button("Repair");
             repairBtn.getStyleClass().add("secondary-button");
 
             versionSelectBox.getChildren().addAll(versionBox, fabricBtn, repairBtn);
 
             versionCard.getChildren().addAll(versionHead, versionSelectBox);
 
-// ================= STATUS CARD =================
+            // ================= STATUS CARD =================
             VBox statusCard = new VBox(8);
             statusCard.getStyleClass().add("dashboard-card");
             statusCard.setMaxWidth(Double.MAX_VALUE);
 
-            Label statusTitle = new Label("Estado");
+            Label statusTitle = new Label("State");
             statusTitle.getStyleClass().add("dashboard-card-title");
 
-            statusLabel = new Label("Esperando...");
+            statusLabel = new Label("Waiting...");
             statusLabel.getStyleClass().add("status-label");
 
             progressBar = new ProgressBar(0);
@@ -1258,15 +1257,15 @@ public class LauncherUI extends Application {
 
             statusCard.getChildren().addAll(statusTitle, statusLabel, progressBar);
 
-// ================= MINIMAL QUICK ACTIONS =================
+            // ================= MINIMAL QUICK ACTIONS =================
             HBox quickActions = new HBox(8);
             quickActions.setAlignment(Pos.CENTER_LEFT);
             quickActions.getStyleClass().add("minimal-actions-bar");
 
             Button quickModsBtn = createMinimalActionButton("Mods");
-            Button quickSearchBtn = createMinimalActionButton("Mercado");
-            Button quickGraphicsBtn = createMinimalActionButton("Gráficos");
-            Button quickEditBtn = createMinimalActionButton("Instancia");
+            Button quickSearchBtn = createMinimalActionButton("Market");
+            Button quickGraphicsBtn = createMinimalActionButton("Graphics");
+            Button quickEditBtn = createMinimalActionButton("Instance");
 
             quickModsBtn.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
@@ -1300,10 +1299,9 @@ public class LauncherUI extends Application {
                     quickModsBtn,
                     quickSearchBtn,
                     quickGraphicsBtn,
-                    quickEditBtn
-            );
+                    quickEditBtn);
 
-// ================= CONSOLE =================
+            // ================= CONSOLE =================
             VBox rightPanel = new VBox(18);
             final TextArea logArea = new TextArea();
             logArea.setEditable(false);
@@ -1313,7 +1311,7 @@ public class LauncherUI extends Application {
 
             redirectLogs(logArea);
 
-            TitledPane consolePane = new TitledPane("Consola del launcher", logArea);
+            TitledPane consolePane = new TitledPane("Launcher console", logArea);
             consolePane.getStyleClass().add("console-pane");
             consolePane.setExpanded(false);
             VBox.setVgrow(consolePane, Priority.ALWAYS);
@@ -1322,8 +1320,7 @@ public class LauncherUI extends Application {
                     topBar,
                     heroCard,
                     versionCard,
-                    consolePane
-            );
+                    consolePane);
             ScrollPane leftScroll = new ScrollPane(leftPanel);
             leftScroll.setFitToWidth(true);
             leftScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -1336,22 +1333,28 @@ public class LauncherUI extends Application {
             root.setLeft(null);
             root.setCenter(rightPanel);
 
-        // Scene
-            Scene scene = new Scene(appOverlay, 680, 720);
+            // Scene
+            Scene scene = new Scene(appOverlay, 1110, 680);
             setupModpackDragAndDrop(scene);
-        try {
-            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-        } catch (Exception e) {
-            System.err.println("Could not load style.css");
-        }
+            try {
+                scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+            } catch (Exception e) {
+                System.err.println("Could not load style.css");
+            }
 
-        stage.setScene(scene);
+            stage.setScene(scene);
             stage.setTitle("Echo Launcher");
+
+            try {
+                stage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/logo.png")));
+            } catch (Exception ignored) {
+            }
+
             stage.setMinWidth(980);
             stage.setMinHeight(620);
-        stage.show();
+            stage.show();
 
-        // Listeners for functionality
+            // Listeners for functionality
             ChangeListener<Object> versionFilterListener = new ChangeListener<Object>() {
                 @Override
                 public void changed(ObservableValue<?> observable, Object oldValue, Object newValue) {
@@ -1375,7 +1378,7 @@ public class LauncherUI extends Application {
                     final VersionEntry v = versionBox.getValue();
 
                     if (v == null) {
-                        statusLabel.setText("⚠️ Selecciona una versión primero");
+                        statusLabel.setText("⚠️ Select a version first");
                         return;
                     }
 
@@ -1383,7 +1386,7 @@ public class LauncherUI extends Application {
                 }
             });
 
-// Mucho más abajo, al final de start:
+            // Mucho más abajo, al final de start:
             loadSettings();
             loadInstancesIntoCombo();
             loadProfilesIntoCombo();
@@ -1396,8 +1399,8 @@ public class LauncherUI extends Application {
             e.printStackTrace(pw);
 
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error de inicio");
-            alert.setHeaderText("Error al iniciar el launcher");
+            alert.setTitle("Startup error");
+            alert.setHeaderText("Error starting the launcher");
             alert.setContentText(e.getMessage());
 
             TextArea area = new TextArea(sw.toString());
@@ -1417,7 +1420,7 @@ public class LauncherUI extends Application {
     private void openInstanceSubFolder(Instance instance, String subFolder) {
         try {
             if (instance == null) {
-                statusLabel.setText("No hay instancia seleccionada.");
+                statusLabel.setText("There is no instance selected.");
                 return;
             }
 
@@ -1433,13 +1436,13 @@ public class LauncherUI extends Application {
                 Desktop.getDesktop().open(dir);
             }
         } catch (Exception ex) {
-            statusLabel.setText("No se pudo abrir carpeta: " + ex.getMessage());
+            statusLabel.setText("Could not open folder:" + ex.getMessage());
         }
     }
 
     private void showInstanceSwitcherDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Instancias");
+        dialog.setTitle("Instances");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -1448,10 +1451,10 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Instancias");
+        Label title = new Label("Instances");
         title.setStyle("-fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label subtitle = new Label("Selecciona, crea o administra tus instancias.");
+        Label subtitle = new Label("Select, create or manage your instances.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
 
         header.getChildren().addAll(title, subtitle);
@@ -1464,7 +1467,7 @@ public class LauncherUI extends Application {
         content.setPadding(new Insets(0, 24, 20, 24));
 
         if (instances == null || instances.isEmpty()) {
-            Label empty = new Label("No hay instancias.");
+            Label empty = new Label("There are no instances.");
             empty.setStyle("-fx-text-fill: #6b7280;");
             content.getChildren().add(empty);
         } else {
@@ -1488,19 +1491,19 @@ public class LauncherUI extends Application {
         actions.setAlignment(Pos.CENTER_RIGHT);
         actions.setPadding(new Insets(0, 24, 24, 24));
 
-        Button newBtn = new Button("Nueva");
+        Button newBtn = new Button("New");
         newBtn.getStyleClass().add("button");
 
-        Button editBtn = new Button("Editar");
+        Button editBtn = new Button("Edit");
         editBtn.getStyleClass().add("secondary-button");
 
-        Button duplicateBtn = new Button("Duplicar");
+        Button duplicateBtn = new Button("Duplicate");
         duplicateBtn.getStyleClass().add("secondary-button");
 
-        Button deleteBtn = new Button("Eliminar");
+        Button deleteBtn = new Button("Delete");
         deleteBtn.getStyleClass().add("secondary-button");
 
-        Button closeBtn = new Button("Cerrar");
+        Button closeBtn = new Button("Close");
         closeBtn.getStyleClass().add("secondary-button");
 
         newBtn.setOnAction(new EventHandler<ActionEvent>() {
@@ -1518,8 +1521,8 @@ public class LauncherUI extends Application {
                     Instance instance = getCurrentInstance();
 
                     if (instance == null) {
-                        statusLabel.setText("No hay instancia seleccionada.");
-                        showToast("No hay instancia seleccionada", "warning");
+                        statusLabel.setText("There is no instance selected.");
+                        showToast("No instance selected", "warning");
                         return;
                     }
 
@@ -1527,8 +1530,8 @@ public class LauncherUI extends Application {
                     openEditInstanceSafely();
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    statusLabel.setText("Error abriendo editor: " + ex.getMessage());
-                    showToast("Error abriendo editor", "error");
+                    statusLabel.setText("Error opening editor:" + ex.getMessage());
+                    showToast("Error opening editor", "error");
                 }
             }
         });
@@ -1581,12 +1584,12 @@ public class LauncherUI extends Application {
         final Instance instance = getCurrentInstance();
 
         if (instance == null) {
-            statusLabel.setText("No hay instancia seleccionada.");
+            statusLabel.setText("There is no instance selected.");
             return;
         }
 
         final Stage dialog = new Stage();
-        dialog.setTitle("Editar instancia");
+        dialog.setTitle("Edit instance");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -1595,10 +1598,10 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Editar instancia");
+        Label title = new Label("Edit instance");
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
-        Label subtitle = new Label(instance.name == null ? "Instancia" : instance.name);
+        Label subtitle = new Label(instance.name == null ? "Instance" : instance.name);
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
         subtitle.setWrapText(true);
 
@@ -1621,12 +1624,11 @@ public class LauncherUI extends Application {
         generalTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         final TextField nameField = new TextField(instance.name == null ? "" : instance.name);
-        nameField.setPromptText("Nombre de la instancia");
+        nameField.setPromptText("Instance name");
 
         final ComboBox<String> iconEditBox = new ComboBox<String>();
         iconEditBox.getItems().addAll(
-                "🌱", "⚔", "✨", "⚙", "🧪", "🎮", "🔥", "💎", "🧱", "🧭", "🚀"
-        );
+                "🌱", "⚔", "✨", "⚙", "🧪", "🎮", "🔥", "💎", "🧱", "🧭", "🚀");
         iconEditBox.setMaxWidth(Double.MAX_VALUE);
 
         if (instance.icon != null && !instance.icon.trim().isEmpty()) {
@@ -1638,9 +1640,8 @@ public class LauncherUI extends Application {
         final TextField usernameEditField = new TextField(
                 instance.username == null || instance.username.trim().isEmpty()
                         ? usernameField.getText()
-                        : instance.username
-        );
-        usernameEditField.setPromptText("Usuario");
+                        : instance.username);
+        usernameEditField.setPromptText("User");
 
         final ComboBox<VersionEntry> versionEditBox = new ComboBox<VersionEntry>();
         versionEditBox.setMaxWidth(Double.MAX_VALUE);
@@ -1662,30 +1663,30 @@ public class LauncherUI extends Application {
             versionEditBox.getSelectionModel().select(versionBox.getValue());
         }
 
-        final Label typeLabel = new Label("Tipo: " + getInstanceTypeLabel(instance));
+        final Label typeLabel = new Label("Type:" + getInstanceTypeLabel(instance));
         typeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
         versionEditBox.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<VersionEntry>() {
             @Override
-            public void changed(ObservableValue<? extends VersionEntry> observable, VersionEntry oldValue, VersionEntry newValue) {
+            public void changed(ObservableValue<? extends VersionEntry> observable, VersionEntry oldValue,
+                    VersionEntry newValue) {
                 if (newValue != null) {
-                    typeLabel.setText("Tipo: " + detectProfileType(newValue.id));
+                    typeLabel.setText("Type:" + detectProfileType(newValue.id));
                 }
             }
         });
 
         generalCard.getChildren().addAll(
                 generalTitle,
-                new Label("Nombre"),
+                new Label("Name"),
                 nameField,
-                new Label("Icono"),
+                new Label("Icon"),
                 iconEditBox,
-                new Label("Usuario"),
+                new Label("User"),
                 usernameEditField,
-                new Label("Versión"),
+                new Label("Version"),
                 versionEditBox,
-                typeLabel
-        );
+                typeLabel);
 
         /*
          * CUSTOM CLIENT JAR
@@ -1693,13 +1694,12 @@ public class LauncherUI extends Application {
         VBox customClientCard = new VBox(12);
         customClientCard.getStyleClass().add("namemc-card");
 
-        Label customClientTitle = new Label("Cliente personalizado");
+        Label customClientTitle = new Label("Custom client");
         customClientTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         Label customClientInfo = new Label(
-                "Puedes usar un .jar personalizado para esta instancia. " +
-                        "Debe ser compatible con la versión seleccionada."
-        );
+                "You can use a custom .jar for this instance." +
+                        "It must be compatible with the selected version.");
         customClientInfo.setWrapText(true);
         customClientInfo.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
@@ -1712,31 +1712,29 @@ public class LauncherUI extends Application {
                         "-fx-background-radius: 12px;" +
                         "-fx-border-color: #e5e7eb;" +
                         "-fx-border-radius: 12px;" +
-                        "-fx-padding: 10px;"
-        );
+                        "-fx-padding: 10px;");
 
         HBox customClientButtons = new HBox(8);
 
-        Button chooseCustomClientBtn = new Button("Elegir .jar");
+        Button chooseCustomClientBtn = new Button("Choose .jar");
         chooseCustomClientBtn.getStyleClass().add("button");
 
-        Button clearCustomClientBtn = new Button("Quitar");
+        Button clearCustomClientBtn = new Button("Remove");
         clearCustomClientBtn.getStyleClass().add("secondary-button");
 
-        Button openCustomClientFolderBtn = new Button("Abrir carpeta");
+        Button openCustomClientFolderBtn = new Button("Open folder");
         openCustomClientFolderBtn.getStyleClass().add("secondary-button");
 
         customClientButtons.getChildren().addAll(
                 chooseCustomClientBtn,
                 clearCustomClientBtn,
-                openCustomClientFolderBtn
-        );
+                openCustomClientFolderBtn);
 
         chooseCustomClientBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 try {
-                    File selectedJar = chooseJarFile(dialog, "Elegir cliente personalizado .jar");
+                    File selectedJar = chooseJarFile(dialog, "Choose custom client .jar");
 
                     if (selectedJar == null) {
                         return;
@@ -1748,12 +1746,12 @@ public class LauncherUI extends Application {
                     InstanceManager.saveInstance(instance);
 
                     customClientPathLabel.setText(getCustomClientLabel(instance));
-                    statusLabel.setText("Cliente personalizado asignado: " + copied.getName());
-                    showToast("Cliente personalizado asignado", "success");
+                    statusLabel.setText("Assigned custom client:" + copied.getName());
+                    showToast("Assigned custom client", "success");
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    statusLabel.setText("Error asignando cliente personalizado: " + ex.getMessage());
-                    showToast("Error asignando cliente personalizado", "error");
+                    statusLabel.setText("Error assigning custom client:" + ex.getMessage());
+                    showToast("Error assigning custom client", "error");
                 }
             }
         });
@@ -1766,11 +1764,11 @@ public class LauncherUI extends Application {
                     InstanceManager.saveInstance(instance);
 
                     customClientPathLabel.setText(getCustomClientLabel(instance));
-                    statusLabel.setText("Cliente personalizado eliminado.");
-                    showToast("Cliente personalizado eliminado", "info");
+                    statusLabel.setText("Custom client removed.");
+                    showToast("Removed custom client", "info");
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    statusLabel.setText("Error eliminando cliente personalizado: " + ex.getMessage());
+                    statusLabel.setText("Error removing custom client:" + ex.getMessage());
                 }
             }
         });
@@ -1783,7 +1781,7 @@ public class LauncherUI extends Application {
                     dir.mkdirs();
                     openFolder(dir);
                 } catch (Exception ex) {
-                    statusLabel.setText("No se pudo abrir carpeta del cliente: " + ex.getMessage());
+                    statusLabel.setText("Could not open client folder:" + ex.getMessage());
                 }
             }
         });
@@ -1792,8 +1790,7 @@ public class LauncherUI extends Application {
                 customClientTitle,
                 customClientInfo,
                 customClientPathLabel,
-                customClientButtons
-        );
+                customClientButtons);
 
         /*
          * JAVA / RAM
@@ -1801,19 +1798,19 @@ public class LauncherUI extends Application {
         VBox javaCard = new VBox(12);
         javaCard.getStyleClass().add("namemc-card");
 
-        Label javaTitle = new Label("Java y memoria");
+        Label javaTitle = new Label("Java and memory");
         javaTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         HBox ramHeader = new HBox(10);
         ramHeader.setAlignment(Pos.CENTER_LEFT);
 
-        Label ramEditTitle = new Label("RAM asignada");
+        Label ramEditTitle = new Label("Allocated RAM");
         ramEditTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         Region ramSpacer = new Region();
         HBox.setHgrow(ramSpacer, Priority.ALWAYS);
 
-        final Label ramEditValue = new Label((instance.ram <= 0 ? 2 : instance.ram) + " GB");
+        final Label ramEditValue = new Label((instance.ram <= 0 ? 2 : instance.ram) + "GB");
         ramEditValue.getStyleClass().add("ram-value");
 
         ramHeader.getChildren().addAll(ramEditTitle, ramSpacer, ramEditValue);
@@ -1829,15 +1826,15 @@ public class LauncherUI extends Application {
         ramEditSlider.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                ramEditValue.setText(newValue.intValue() + " GB");
+                ramEditValue.setText(newValue.intValue() + "GB");
             }
         });
 
-        Label javaHint = new Label("Java se selecciona automáticamente según la versión de Minecraft.");
+        Label javaHint = new Label("Java is automatically selected based on the version of Minecraft.");
         javaHint.setWrapText(true);
         javaHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
-        Label jvmArgsTitle = new Label("Argumentos JVM avanzados");
+        Label jvmArgsTitle = new Label("Advanced JVM Arguments");
         jvmArgsTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         final TextArea jvmArgsArea = new TextArea(instance.jvmArgs == null ? "" : instance.jvmArgs);
@@ -1846,7 +1843,7 @@ public class LauncherUI extends Application {
         jvmArgsArea.setPrefHeight(80);
         jvmArgsArea.getStyleClass().add("console-output");
 
-        Label jvmArgsHint = new Label("Opcional. Déjalo vacío si no sabes qué poner.");
+        Label jvmArgsHint = new Label("Optional. Leave it empty if you don't know what to put.");
         jvmArgsHint.setWrapText(true);
         jvmArgsHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
@@ -1857,8 +1854,7 @@ public class LauncherUI extends Application {
                 javaHint,
                 jvmArgsTitle,
                 jvmArgsArea,
-                jvmArgsHint
-        );
+                jvmArgsHint);
 
         /*
          * NOTES
@@ -1866,11 +1862,11 @@ public class LauncherUI extends Application {
         VBox notesCard = new VBox(12);
         notesCard.getStyleClass().add("namemc-card");
 
-        Label notesTitle = new Label("Notas");
+        Label notesTitle = new Label("Notes");
         notesTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         final TextArea notesArea = new TextArea(instance.notes == null ? "" : instance.notes);
-        notesArea.setPromptText("Notas de la instancia...");
+        notesArea.setPromptText("Instance Notes...");
         notesArea.setWrapText(true);
         notesArea.setPrefHeight(100);
 
@@ -1882,7 +1878,7 @@ public class LauncherUI extends Application {
         VBox foldersCard = new VBox(12);
         foldersCard.getStyleClass().add("namemc-card");
 
-        Label foldersTitle = new Label("Carpetas");
+        Label foldersTitle = new Label("Folders");
         foldersTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         File gameDir = InstanceManager.getGameDir(instance);
@@ -1894,7 +1890,7 @@ public class LauncherUI extends Application {
         HBox folderRow1 = new HBox(8);
         HBox folderRow2 = new HBox(8);
 
-        Button openRootBtn = new Button("Principal");
+        Button openRootBtn = new Button("Main");
         openRootBtn.getStyleClass().add("secondary-button");
         openRootBtn.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(openRootBtn, Priority.ALWAYS);
@@ -1904,7 +1900,7 @@ public class LauncherUI extends Application {
         openModsBtn.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(openModsBtn, Priority.ALWAYS);
 
-        Button openResourcepacksBtn = new Button("Texturas");
+        Button openResourcepacksBtn = new Button("Textures");
         openResourcepacksBtn.getStyleClass().add("secondary-button");
         openResourcepacksBtn.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(openResourcepacksBtn, Priority.ALWAYS);
@@ -1925,7 +1921,6 @@ public class LauncherUI extends Application {
         HBox.setHgrow(openLogsBtn, Priority.ALWAYS);
 
         folderRow1.getChildren().addAll(openRootBtn, openModsBtn, openResourcepacksBtn);
-        folderRow2.getChildren().addAll(openShaderpacksBtn, openConfigBtn);
 
         openRootBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -1979,10 +1974,10 @@ public class LauncherUI extends Application {
         HBox footer = new HBox(10);
         footer.setAlignment(Pos.CENTER_RIGHT);
 
-        Button cancelBtn = new Button("Cancelar");
+        Button cancelBtn = new Button("Cancel");
         cancelBtn.getStyleClass().add("secondary-button");
 
-        Button saveBtn = new Button("Guardar cambios");
+        Button saveBtn = new Button("Save changes");
         saveBtn.getStyleClass().add("button");
 
         footer.getChildren().addAll(cancelBtn, saveBtn);
@@ -2000,14 +1995,14 @@ public class LauncherUI extends Application {
                 String newName = nameField.getText() == null ? "" : nameField.getText().trim();
 
                 if (newName.isEmpty()) {
-                    statusLabel.setText("El nombre de la instancia no puede estar vacío.");
+                    statusLabel.setText("The instance name cannot be empty.");
                     return;
                 }
 
                 VersionEntry selectedVersion = versionEditBox.getValue();
 
                 if (selectedVersion == null) {
-                    statusLabel.setText("Selecciona una versión para la instancia.");
+                    statusLabel.setText("Select a version for the instance.");
                     return;
                 }
 
@@ -2033,12 +2028,12 @@ public class LauncherUI extends Application {
 
                     prefs.put("lastInstanceName", instance.name);
 
-                    statusLabel.setText("Instancia guardada: " + instance.name);
+                    statusLabel.setText("Saved instance:" + instance.name);
 
                     dialog.close();
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    statusLabel.setText("Error guardando instancia: " + ex.getMessage());
+                    statusLabel.setText("Error saving instance:" + ex.getMessage());
                 }
             }
         });
@@ -2061,8 +2056,9 @@ public class LauncherUI extends Application {
         dialog.setMinHeight(600);
         dialog.show();
     }
+
     private void loadInstancesIntoCombo() {
-        System.out.println("[Instances] Cargando instancias...");
+        System.out.println("[Instances] Loading instances...");
 
         instances = InstanceManager.loadInstances();
 
@@ -2072,16 +2068,16 @@ public class LauncherUI extends Application {
 
         if (instances.isEmpty()) {
             try {
-                System.out.println("[Instances] No hay instancias, creando Principal...");
+                System.out.println("[Instances] There are no instances, creating Main...");
                 Instance def = InstanceManager.createDefaultInstance();
                 instances.add(def);
             } catch (Exception ex) {
                 ex.printStackTrace();
-                statusLabel.setText("Error creando instancia principal: " + ex.getMessage());
+                statusLabel.setText("Error creating main instance:" + ex.getMessage());
             }
         }
 
-        System.out.println("[Instances] Instancias cargadas: " + instances.size());
+        System.out.println("[Instances] Loaded instances:" + instances.size());
 
         refreshInstanceViews();
 
@@ -2106,7 +2102,7 @@ public class LauncherUI extends Application {
             return;
         }
 
-        System.out.println("[Instances] Seleccionando instancia: " + instance.name);
+        System.out.println("[Instances] Selecting instance:" + instance.name);
 
         selectedInstance = instance;
 
@@ -2120,7 +2116,7 @@ public class LauncherUI extends Application {
 
     private void showInstanceTemplateDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Nueva instancia");
+        dialog.setTitle("New instance");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -2129,10 +2125,10 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Nueva instancia");
+        Label title = new Label("New instance");
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
-        Label subtitle = new Label("Elige una plantilla para crear tu instancia.");
+        Label subtitle = new Label("Choose a template to create your instance.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
 
         header.getChildren().addAll(title, subtitle);
@@ -2142,33 +2138,28 @@ public class LauncherUI extends Application {
 
         VBox vanilla = createTemplateCard(
                 "Vanilla",
-                "Minecraft limpio sin mods. Ideal para jugar sin modificaciones.",
-                "🌱"
-        );
+                "Clean Minecraft without mods. Ideal to play without modifications.",
+                "🌱");
 
         VBox fabricPerformance = createTemplateCard(
-                "Fabric rendimiento",
-                "Fabric con mods para mejorar FPS y estabilidad.",
-                "⚡"
-        );
+                "Fabric performance",
+                "Fabric with mods to improve FPS and stability.",
+                "⚡");
 
         VBox fabricShaders = createTemplateCard(
                 "Fabric shaders",
-                "Fabric con Sodium, Iris y shaderpack recomendado.",
-                "✨"
-        );
+                "Fabric with Sodium, Iris and shaderpack recommended.",
+                "✨");
 
         VBox pvp189 = createTemplateCard(
                 "PvP 1.8.9",
-                "Instancia para PvP clásico en Minecraft 1.8.9.",
-                "⚔"
-        );
+                "Instance for classic PvP in Minecraft 1.8.9.",
+                "⚔");
 
         VBox custom = createTemplateCard(
-                "Vacía personalizada",
-                "Crea una instancia eligiendo manualmente la versión actual.",
-                "🧩"
-        );
+                "Custom Empty",
+                "Create an instance by manually choosing the current version.",
+                "🧩");
 
         content.getChildren().addAll(vanilla, fabricPerformance, fabricShaders, pvp189, custom);
 
@@ -2256,8 +2247,8 @@ public class LauncherUI extends Application {
 
     private void createInstanceFromTemplate(final String templateId) {
         TextInputDialog nameDialog = new TextInputDialog(getDefaultTemplateName(templateId));
-        nameDialog.setTitle("Nueva instancia");
-        nameDialog.setHeaderText("Nombre de la instancia");
+        nameDialog.setTitle("New instance");
+        nameDialog.setHeaderText("Instance name");
         nameDialog.setContentText("Nombre:");
 
         java.util.Optional<String> result = nameDialog.showAndWait();
@@ -2269,7 +2260,7 @@ public class LauncherUI extends Application {
         final String name = result.get() == null ? "" : result.get().trim();
 
         if (name.isEmpty()) {
-            statusLabel.setText("El nombre de la instancia no puede estar vacío.");
+            statusLabel.setText("The instance name cannot be empty.");
             return;
         }
 
@@ -2279,7 +2270,7 @@ public class LauncherUI extends Application {
 
         final TemplateConfig config = getTemplateConfig(templateId);
 
-        statusLabel.setText("Creando instancia " + name + "...");
+        statusLabel.setText("Creating instance" + name + "...");
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -2291,8 +2282,7 @@ public class LauncherUI extends Application {
                         username,
                         config.version,
                         config.type,
-                        config.ram
-                );
+                        config.ram);
 
                 if (config.installFabric) {
                     final String mcVersion = config.version;
@@ -2302,7 +2292,7 @@ public class LauncherUI extends Application {
                             new FabricManager.LauncherCallback() {
                                 @Override
                                 public void onStatus(String status) {
-                                    System.out.println("[Template] " + status);
+                                    System.out.println("[Template]" + status);
                                 }
 
                                 @Override
@@ -2319,10 +2309,9 @@ public class LauncherUI extends Application {
 
                                 @Override
                                 public void onError(String error) {
-                                    System.err.println("[Template] Error instalando Fabric: " + error);
+                                    System.err.println("[Template] Error installing Fabric:" + error);
                                 }
-                            }
-                    );
+                            });
 
                     /*
                      * FabricManager instala en otro thread.
@@ -2341,8 +2330,7 @@ public class LauncherUI extends Application {
                             ModrinthClient.ModVersionFile fileData = ModrinthClient.getLatestVersionFile(
                                     slug,
                                     extractMinecraftVersionForMods(instance.version),
-                                    "mod"
-                            );
+                                    "mod");
 
                             File target = new File(modsDir, safeModFileName(fileData.filename));
 
@@ -2350,7 +2338,7 @@ public class LauncherUI extends Application {
                                 downloadModFile(fileData.url, target);
                             }
                         } catch (Exception ex) {
-                            System.err.println("[Template] No se pudo instalar mod " + slug + ": " + ex.getMessage());
+                            System.err.println("[Template] Could not install mod" + slug + ": " + ex.getMessage());
                         }
                     }
                 }
@@ -2362,8 +2350,7 @@ public class LauncherUI extends Application {
                         ModrinthClient.ModVersionFile fileData = ModrinthClient.getLatestVersionFile(
                                 config.shaderSlug,
                                 extractMinecraftVersionForMods(instance.version),
-                                "shader"
-                        );
+                                "shader");
 
                         File target = new File(shaderDir, safeModFileName(fileData.filename));
 
@@ -2371,7 +2358,8 @@ public class LauncherUI extends Application {
                             downloadModFile(fileData.url, target);
                         }
                     } catch (Exception ex) {
-                        System.err.println("[Template] No se pudo instalar shader " + config.shaderSlug + ": " + ex.getMessage());
+                        System.err.println(
+                                "[Template] Failed to install shader" + config.shaderSlug + ": " + ex.getMessage());
                     }
                 }
 
@@ -2395,7 +2383,7 @@ public class LauncherUI extends Application {
 
                 loadVersions();
 
-                statusLabel.setText("✅ Instancia creada: " + instance.name);
+                statusLabel.setText("✅ Instance created:" + instance.name);
             }
         });
 
@@ -2407,10 +2395,10 @@ public class LauncherUI extends Application {
                 Throwable ex = task.getException();
 
                 if (ex != null) {
-                    statusLabel.setText("❌ Error creando instancia: " + ex.getMessage());
+                    statusLabel.setText("❌ Error creating instance:" + ex.getMessage());
                     ex.printStackTrace();
                 } else {
-                    statusLabel.setText("❌ Error creando instancia.");
+                    statusLabel.setText("❌ Error creating instance.");
                 }
             }
         });
@@ -2445,15 +2433,14 @@ public class LauncherUI extends Application {
                     "fabric",
                     4,
                     true,
-                    new String[]{
+                    new String[] {
                             "sodium",
                             "lithium",
                             "ferrite-core",
                             "modmenu",
                             "fabric-api"
                     },
-                    null
-            );
+                    null);
         }
 
         if ("fabric-shaders".equals(templateId)) {
@@ -2462,7 +2449,7 @@ public class LauncherUI extends Application {
                     "fabric",
                     6,
                     true,
-                    new String[]{
+                    new String[] {
                             "sodium",
                             "iris",
                             "sodium-extra",
@@ -2470,8 +2457,7 @@ public class LauncherUI extends Application {
                             "indium",
                             "fabric-api"
                     },
-                    "complementary-reimagined"
-            );
+                    "complementary-reimagined");
         }
 
         if ("pvp-1.8.9".equals(templateId)) {
@@ -2480,9 +2466,8 @@ public class LauncherUI extends Application {
                     "vanilla",
                     2,
                     false,
-                    new String[]{},
-                    null
-            );
+                    new String[] {},
+                    null);
         }
 
         if ("custom".equals(templateId)) {
@@ -2493,9 +2478,8 @@ public class LauncherUI extends Application {
                     detectProfileType(version),
                     (int) ramSlider.getValue(),
                     false,
-                    new String[]{},
-                    null
-            );
+                    new String[] {},
+                    null);
         }
 
         return new TemplateConfig(
@@ -2503,14 +2487,13 @@ public class LauncherUI extends Application {
                 "vanilla",
                 2,
                 false,
-                new String[]{},
-                null
-        );
+                new String[] {},
+                null);
     }
 
     private String getDefaultTemplateName(String templateId) {
         if ("fabric-performance".equals(templateId)) {
-            return "Fabric rendimiento";
+            return "Fabric performance";
         }
 
         if ("fabric-shaders".equals(templateId)) {
@@ -2522,7 +2505,7 @@ public class LauncherUI extends Application {
         }
 
         if ("custom".equals(templateId)) {
-            return "Instancia personalizada";
+            return "Custom instance";
         }
 
         return "Vanilla";
@@ -2562,7 +2545,8 @@ public class LauncherUI extends Application {
                         File json = new File(dir, name + ".json");
 
                         if (json.exists()) {
-                            if (newest == null || json.lastModified() > new File(newest, newest.getName() + ".json").lastModified()) {
+                            if (newest == null || json.lastModified() > new File(newest, newest.getName() + ".json")
+                                    .lastModified()) {
                                 newest = dir;
                             }
                         }
@@ -2580,10 +2564,12 @@ public class LauncherUI extends Application {
             Thread.sleep(500);
         }
 
-        throw new Exception("Fabric tardó demasiado en instalarse.");
+        throw new Exception("Fabric took too long to install.");
     }
 
-    private void createNewInstance() {    showInstanceTemplateDialog();}
+    private void createNewInstance() {
+        showInstanceTemplateDialog();
+    }
 
     private String getInstanceIcon(Instance instance) {
         if (instance == null || instance.icon == null || instance.icon.trim().isEmpty()) {
@@ -2675,11 +2661,11 @@ public class LauncherUI extends Application {
 
     private String getInstanceMetaText(Instance instance) {
         if (instance == null) {
-            return "Sin versión · 2 GB";
+            return "No version · 2 GB";
         }
 
         String version = instance.version == null || instance.version.trim().isEmpty()
-                ? "Sin versión"
+                ? "No version"
                 : instance.version;
 
         int ram = instance.ram <= 0 ? 2 : instance.ram;
@@ -2689,10 +2675,10 @@ public class LauncherUI extends Application {
                 && new File(instance.customClientJarPath).exists();
 
         if (customClient) {
-            return version + " · " + ram + " GB RAM · Cliente custom";
+            return version + " · " + ram + "GB RAM · Custom client";
         }
 
-        return version + " · " + ram + " GB RAM";
+        return version + " · " + ram + "GB RAM";
     }
 
     private String getInstanceModsSummary(Instance instance) {
@@ -2730,17 +2716,17 @@ public class LauncherUI extends Application {
         }
 
         if (disabled > 0) {
-            return active + " activos · " + disabled + " desactivados";
+            return active + "active ·" + disabled + "disabled";
         }
 
-        return active + " mods activos";
+        return active + "active mods";
     }
 
     private void saveSelectedInstance() {
         Instance instance = getCurrentInstance();
 
         if (instance == null) {
-            statusLabel.setText("No hay instancia seleccionada para guardar.");
+            statusLabel.setText("There is no instance selected to save.");
             return;
         }
 
@@ -2754,7 +2740,7 @@ public class LauncherUI extends Application {
             }
 
             if (instance.name == null || instance.name.trim().isEmpty()) {
-                instance.name = "Instancia";
+                instance.name = "Instance";
             }
 
             InstanceManager.ensureInstanceFolders(instance);
@@ -2765,10 +2751,10 @@ public class LauncherUI extends Application {
             refreshInstanceViews();
             selectInstance(instance);
 
-            statusLabel.setText("✅ Instancia guardada: " + instance.name);
+            statusLabel.setText("✅ Saved instance:" + instance.name);
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusLabel.setText("❌ Error guardando instancia: " + ex.getMessage());
+            statusLabel.setText("❌ Error saving instance:" + ex.getMessage());
         }
     }
 
@@ -2776,13 +2762,13 @@ public class LauncherUI extends Application {
         final Instance selected = getCurrentInstance();
 
         if (selected == null) {
-            statusLabel.setText("No hay instancia seleccionada para duplicar.");
+            statusLabel.setText("There is no instance selected to duplicate.");
             return;
         }
 
-        TextInputDialog dialog = new TextInputDialog(selected.name + " copia");
-        dialog.setTitle("Duplicar instancia");
-        dialog.setHeaderText("Nombre de la copia");
+        TextInputDialog dialog = new TextInputDialog(selected.name + "copy");
+        dialog.setTitle("Duplicate instance");
+        dialog.setHeaderText("Copy name");
         dialog.setContentText("Nombre:");
 
         java.util.Optional<String> result = dialog.showAndWait();
@@ -2794,7 +2780,7 @@ public class LauncherUI extends Application {
         String name = result.get() == null ? "" : result.get().trim();
 
         if (name.isEmpty()) {
-            statusLabel.setText("El nombre no puede estar vacío.");
+            statusLabel.setText("The name cannot be empty.");
             return;
         }
 
@@ -2808,10 +2794,10 @@ public class LauncherUI extends Application {
 
             prefs.put("lastInstanceName", copy.name);
 
-            statusLabel.setText("✅ Instancia duplicada: " + copy.name);
+            statusLabel.setText("✅ Duplicate instance:" + copy.name);
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusLabel.setText("❌ Error duplicando instancia: " + ex.getMessage());
+            statusLabel.setText("❌ Error duplicating instance:" + ex.getMessage());
         }
     }
 
@@ -2819,19 +2805,20 @@ public class LauncherUI extends Application {
         final Instance selected = getCurrentInstance();
 
         if (selected == null) {
-            statusLabel.setText("No hay instancia seleccionada para eliminar.");
+            statusLabel.setText("There is no instance selected to delete.");
             return;
         }
 
         if (instances.size() <= 1) {
-            statusLabel.setText("No puedes eliminar la única instancia.");
+            statusLabel.setText("You cannot delete the single instance.");
             return;
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Eliminar instancia");
-        confirm.setHeaderText("¿Eliminar esta instancia?");
-        confirm.setContentText(selected.name + "\n\nSe eliminarán sus mods, configs, resourcepacks y shaderpacks.");
+        confirm.setTitle("Delete instance");
+        confirm.setHeaderText("Delete this instance?");
+        confirm.setContentText(
+                selected.name + "\n\nYour mods, configs, resourcepacks and shaderpacks will be removed.");
 
         java.util.Optional<ButtonType> result = confirm.showAndWait();
 
@@ -2852,10 +2839,10 @@ public class LauncherUI extends Application {
                 prefs.put("lastInstanceName", next.name);
             }
 
-            statusLabel.setText("✅ Instancia eliminada: " + selected.name);
+            statusLabel.setText("✅ Deleted instance:" + selected.name);
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusLabel.setText("❌ Error eliminando instancia: " + ex.getMessage());
+            statusLabel.setText("❌ Error deleting instance:" + ex.getMessage());
         }
     }
 
@@ -2883,7 +2870,7 @@ public class LauncherUI extends Application {
 
         updateHeroInstance(instance);
 
-        statusLabel.setText("Instancia aplicada: " + instance.name);
+        statusLabel.setText("Applied instance:" + instance.name);
     }
 
     private void updateHeroInstance(Instance instance) {
@@ -2896,7 +2883,7 @@ public class LauncherUI extends Application {
         }
 
         if (heroInstanceNameLabel != null) {
-            heroInstanceNameLabel.setText(instance.name == null ? "Instancia" : instance.name);
+            heroInstanceNameLabel.setText(instance.name == null ? "Instance" : instance.name);
         }
 
         if (heroInstanceMetaLabel != null) {
@@ -2908,15 +2895,16 @@ public class LauncherUI extends Application {
         }
 
         if (heroUserLabel != null) {
-            String user = usernameField == null || usernameField.getText() == null || usernameField.getText().trim().isEmpty()
-                    ? "Steve"
-                    : usernameField.getText().trim();
+            String user = usernameField == null || usernameField.getText() == null
+                    || usernameField.getText().trim().isEmpty()
+                            ? "Steve"
+                            : usernameField.getText().trim();
 
-            heroUserLabel.setText("Usuario: " + user);
+            heroUserLabel.setText("User:" + user);
         }
 
         if (topInstanceBtn != null) {
-            topInstanceBtn.setText(instance.name == null ? "Instancia" : instance.name);
+            topInstanceBtn.setText(instance.name == null ? "Instance" : instance.name);
         }
 
         updateDashboardStats(instance);
@@ -2941,7 +2929,7 @@ public class LauncherUI extends Application {
     }
 
     private void refreshInstanceViews() {
-        System.out.println("[Instances] Refrescando vistas...");
+        System.out.println("[Instances] Refreshing views...");
 
         if (instanceBox != null) {
             instanceBox.getItems().setAll(instances);
@@ -2952,14 +2940,14 @@ public class LauncherUI extends Application {
 
     private void renderInstanceCards() {
         if (instanceCardsBox == null) {
-            System.out.println("[Instances] instanceCardsBox es NULL");
+            System.out.println("[Instances] instanceCardsBox is NULL");
             return;
         }
 
         instanceCardsBox.getChildren().clear();
 
         if (instances == null || instances.isEmpty()) {
-            Label empty = new Label("No hay instancias.");
+            Label empty = new Label("There are no instances.");
             empty.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
             instanceCardsBox.getChildren().add(empty);
             return;
@@ -3001,7 +2989,7 @@ public class LauncherUI extends Application {
         HBox top = new HBox(8);
         top.setAlignment(Pos.CENTER_LEFT);
 
-        Label name = new Label(item.name == null ? "Instancia" : item.name);
+        Label name = new Label(item.name == null ? "Instance" : item.name);
         name.getStyleClass().add("instance-card-title");
         name.setMaxWidth(170);
 
@@ -3052,18 +3040,18 @@ public class LauncherUI extends Application {
     }
 
     private void loadPopularContent(final ComboBox<String> typeBox,
-                                    final ListView<ModrinthClient.ModResult> resultsList,
-                                    final Button searchBtn,
-                                    final Button installBtn,
-                                    final Label status) {
+            final ListView<ModrinthClient.ModResult> resultsList,
+            final Button searchBtn,
+            final Button installBtn,
+            final Label status) {
         final String type = getSelectedContentType(typeBox);
 
         resultsList.getItems().clear();
-        installBtn.setText("Instalar seleccionado");
+        installBtn.setText("Install selected");
         installBtn.setDisable(true);
         searchBtn.setDisable(true);
 
-        status.setText("Cargando " + getContentTypeLabelPlural(type).toLowerCase() + " populares...");
+        status.setText("Loading" + getContentTypeLabelPlural(type).toLowerCase() + "popular...");
 
         Thread t = new Thread(new Runnable() {
             @Override
@@ -3078,9 +3066,10 @@ public class LauncherUI extends Application {
                             searchBtn.setDisable(false);
 
                             if (results.isEmpty()) {
-                                status.setText("No se encontraron contenidos populares.");
+                                status.setText("No popular content found.");
                             } else {
-                                status.setText("Mostrando " + results.size() + " " + getContentTypeLabelPlural(type).toLowerCase() + " populares.");
+                                status.setText("Showing" + results.size() + " "
+                                        + getContentTypeLabelPlural(type).toLowerCase() + "popular.");
                             }
                         }
                     });
@@ -3089,7 +3078,7 @@ public class LauncherUI extends Application {
                         @Override
                         public void run() {
                             searchBtn.setDisable(false);
-                            status.setText("Error cargando populares: " + ex.getMessage());
+                            status.setText("Error loading popular:" + ex.getMessage());
                         }
                     });
                 }
@@ -3102,7 +3091,7 @@ public class LauncherUI extends Application {
 
     private String getContentTypeLabelPlural(String type) {
         if ("resourcepack".equalsIgnoreCase(type)) {
-            return "Texturas";
+            return "Textures";
         }
 
         if ("shader".equalsIgnoreCase(type)) {
@@ -3129,7 +3118,7 @@ public class LauncherUI extends Application {
         InstalledModInfo(File file) {
             this.file = file;
             this.name = file.getName();
-            this.description = "Sin descripción disponible.";
+            this.description = "No description available.";
             this.modId = "";
             this.version = "";
             this.enabled = file.getName().toLowerCase().endsWith(".jar");
@@ -3156,7 +3145,7 @@ public class LauncherUI extends Application {
         });
 
         if (files == null || files.length == 0) {
-            statusLabel.setText("No hay mods instalados.");
+            statusLabel.setText("There are no mods installed.");
             return;
         }
 
@@ -3182,29 +3171,29 @@ public class LauncherUI extends Application {
             installedList.getItems().add(info);
         }
 
-        statusLabel.setText("Mods: " + files.length + " · Activos: " + active + " · Desactivados: " + disabled);
+        statusLabel.setText("Mods:" + files.length + "· Assets:" + active + "· Disabled:" + disabled);
     }
 
     private File installContentFromModrinthWithDependencies(ModrinthClient.ModResult selected,
-                                                            String mcVersion,
-                                                            Label statusLabel,
-                                                            ProgressBar progressBar) throws Exception {
+            String mcVersion,
+            Label statusLabel,
+            ProgressBar progressBar) throws Exception {
         java.util.Set<String> installing = new java.util.HashSet<String>();
         return installContentRecursive(selected, mcVersion, statusLabel, progressBar, installing, 0);
     }
 
     private File installContentRecursive(ModrinthClient.ModResult selected,
-                                         String mcVersion,
-                                         Label statusLabel,
-                                         ProgressBar progressBar,
-                                         java.util.Set<String> installing,
-                                         int depth) throws Exception {
+            String mcVersion,
+            Label statusLabel,
+            ProgressBar progressBar,
+            java.util.Set<String> installing,
+            int depth) throws Exception {
         if (selected == null) {
-            throw new Exception("No hay contenido seleccionado.");
+            throw new Exception("There is no selected content.");
         }
 
         if (depth > 10) {
-            throw new Exception("Demasiadas dependencias anidadas.");
+            throw new Exception("Too many nested dependencies.");
         }
 
         String type = selected.projectType == null || selected.projectType.trim().isEmpty()
@@ -3214,7 +3203,7 @@ public class LauncherUI extends Application {
         String projectId = selected.projectId;
 
         if (projectId == null || projectId.trim().isEmpty()) {
-            throw new Exception("Project ID inválido.");
+            throw new Exception("Invalid Project ID.");
         }
 
         if (isContentInstalled(projectId, type)) {
@@ -3226,12 +3215,12 @@ public class LauncherUI extends Application {
         }
 
         if (installing.contains(projectId)) {
-            throw new Exception("Dependencia circular detectada: " + projectId);
+            throw new Exception("Circular dependency detected:" + projectId);
         }
 
         installing.add(projectId);
 
-        final String statusText = "Resolviendo " + selected.title + "...";
+        final String statusText = "Solving" + selected.title + "...";
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
@@ -3242,8 +3231,7 @@ public class LauncherUI extends Application {
         ModrinthClient.ModVersionFile fileData = ModrinthClient.getLatestVersionFile(
                 projectId,
                 mcVersion,
-                type
-        );
+                type);
 
         if (fileData.dependencyProjectIds != null && !fileData.dependencyProjectIds.isEmpty()) {
             for (String depProjectId : fileData.dependencyProjectIds) {
@@ -3258,12 +3246,11 @@ public class LauncherUI extends Application {
                 ModrinthClient.ModResult depResult = new ModrinthClient.ModResult(
                         depProjectId,
                         depProjectId,
-                        "Dependencia requerida",
+                        "Required dependency",
                         depProjectId,
-                        "mod"
-                );
+                        "mod");
 
-                final String depStatus = "Instalando dependencia requerida: " + depProjectId;
+                final String depStatus = "Installing required dependency:" + depProjectId;
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
@@ -3275,7 +3262,7 @@ public class LauncherUI extends Application {
             }
         }
 
-        final String installStatus = "Descargando " + selected.title + "...";
+        final String installStatus = "Downloading" + selected.title + "...";
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
@@ -3301,8 +3288,7 @@ public class LauncherUI extends Application {
                 targetFile,
                 statusLabel,
                 progressBar,
-                selected.title
-        );
+                selected.title);
 
         markContentInstalled(projectId, type, selected.title, targetFile);
         markLogicalContentInstalled(selected, targetFile);
@@ -3327,7 +3313,8 @@ public class LauncherUI extends Application {
                 java.io.InputStream in = zip.getInputStream(fabricEntry);
 
                 try {
-                    JsonObject json = JsonParser.parseReader(new java.io.InputStreamReader(in, "UTF-8")).getAsJsonObject();
+                    JsonObject json = JsonParser.parseReader(new java.io.InputStreamReader(in, "UTF-8"))
+                            .getAsJsonObject();
 
                     if (json.has("id") && !json.get("id").isJsonNull()) {
                         info.modId = json.get("id").getAsString();
@@ -3363,11 +3350,11 @@ public class LauncherUI extends Application {
                 }
             } else {
                 info.name = cleanModFileName(file.getName());
-                info.description = "No se encontró metadata Fabric en este archivo.";
+                info.description = "No Fabric metadata was found in this file.";
             }
         } catch (Exception ex) {
             info.name = cleanModFileName(file.getName());
-            info.description = "No se pudo leer información del mod.";
+            info.description = "Could not read mod information.";
         } finally {
             try {
                 if (zip != null) {
@@ -3521,7 +3508,7 @@ public class LauncherUI extends Application {
 
     private File toggleModEnabled(File file) throws Exception {
         if (file == null || !file.exists()) {
-            throw new Exception("El archivo no existe.");
+            throw new Exception("The file does not exist.");
         }
 
         String name = file.getName();
@@ -3534,17 +3521,17 @@ public class LauncherUI extends Application {
         } else if (name.toLowerCase().endsWith(".disabled")) {
             target = new File(file.getParentFile(), name.substring(0, name.length() - ".disabled".length()));
         } else {
-            throw new Exception("Extensión no soportada.");
+            throw new Exception("Unsupported extension.");
         }
 
         if (target.exists()) {
-            throw new Exception("Ya existe un archivo con el nombre destino: " + target.getName());
+            throw new Exception("A file with the destination name already exists:" + target.getName());
         }
 
         boolean renamed = file.renameTo(target);
 
         if (!renamed) {
-            throw new Exception("No se pudo renombrar el archivo.");
+            throw new Exception("The file could not be renamed.");
         }
 
         return target;
@@ -3552,7 +3539,7 @@ public class LauncherUI extends Application {
 
     private String cleanModFileName(String fileName) {
         if (fileName == null) {
-            return "Mod desconocido";
+            return "Unknown mod";
         }
 
         String name = fileName;
@@ -3568,7 +3555,7 @@ public class LauncherUI extends Application {
         name = name.replace("-", " ").replace("_", " ").trim();
 
         if (name.isEmpty()) {
-            return "Mod desconocido";
+            return "Unknown mod";
         }
 
         return name;
@@ -3576,7 +3563,7 @@ public class LauncherUI extends Application {
 
     private void showInstalledModsDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Gestor de contenido");
+        dialog.setTitle("Content manager");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -3585,10 +3572,10 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Contenido instalado");
+        Label title = new Label("Installed content");
         title.setStyle("-fx-font-size: 28px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
-        Label subtitle = new Label("Administra mods, shaders y paquetes de textura de la instancia actual.");
+        Label subtitle = new Label("Manages mods, shaders, and texture packs for the current instance.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
         subtitle.setWrapText(true);
 
@@ -3602,23 +3589,23 @@ public class LauncherUI extends Application {
         topBar.setAlignment(Pos.CENTER_LEFT);
 
         final ComboBox<String> contentTypeBox = new ComboBox<String>();
-        contentTypeBox.getItems().addAll("Mods", "Shaders", "Texturas");
+        contentTypeBox.getItems().addAll("Mods", "Shaders", "Textures");
         contentTypeBox.getSelectionModel().selectFirst();
         contentTypeBox.setPrefWidth(150);
         contentTypeBox.getStyleClass().add("provider-combo");
 
-        final Button refreshBtn = new Button("Actualizar");
+        final Button refreshBtn = new Button("Update");
         refreshBtn.getStyleClass().add("secondary-button");
 
         final Button toggleBtn = new Button("Activar / Desactivar");
         toggleBtn.getStyleClass().add("button");
         toggleBtn.setDisable(true);
 
-        final Button deleteBtn = new Button("Eliminar");
+        final Button deleteBtn = new Button("Delete");
         deleteBtn.getStyleClass().add("secondary-button");
         deleteBtn.setDisable(true);
 
-        final Button openFolderBtn = new Button("Abrir carpeta");
+        final Button openFolderBtn = new Button("Open folder");
         openFolderBtn.getStyleClass().add("secondary-button");
 
         Region spacer = new Region();
@@ -3630,8 +3617,7 @@ public class LauncherUI extends Application {
                 toggleBtn,
                 deleteBtn,
                 spacer,
-                openFolderBtn
-        );
+                openFolderBtn);
 
         final ListView<InstalledContentInfo> list = new ListView<InstalledContentInfo>();
         list.getStyleClass().add("list-view");
@@ -3676,8 +3662,7 @@ public class LauncherUI extends Application {
                                     item.name == null ? "" : item.name,
                                     item.description == null ? "" : item.description,
                                     item.projectId == null ? "" : item.projectId,
-                                    item.type == null ? "mod" : item.type
-                            );
+                                    item.type == null ? "mod" : item.type);
 
                             fake.iconUrl = item.iconUrl == null ? "" : item.iconUrl;
 
@@ -3694,13 +3679,12 @@ public class LauncherUI extends Application {
                         HBox top = new HBox(8);
                         top.setAlignment(Pos.CENTER_LEFT);
 
-                        Label nameLabel = new Label(item.name == null ? "Contenido" : item.name);
+                        Label nameLabel = new Label(item.name == null ? "Content" : item.name);
                         nameLabel.setMaxWidth(430);
                         nameLabel.setStyle(
                                 "-fx-font-size: 15px;" +
                                         "-fx-font-weight: 800;" +
-                                        "-fx-text-fill: #111827;"
-                        );
+                                        "-fx-text-fill: #111827;");
 
                         Region topSpacer = new Region();
                         HBox.setHgrow(topSpacer, Priority.ALWAYS);
@@ -3718,7 +3702,7 @@ public class LauncherUI extends Application {
                         Label typeBadge = new Label(getContentTypeLabel(item.type));
                         typeBadge.getStyleClass().add("content-type-badge");
 
-                        Label stateBadge = new Label(item.enabled ? "Activo" : "Desactivado");
+                        Label stateBadge = new Label(item.enabled ? "Active" : "Disabled");
                         stateBadge.getStyleClass().add(item.enabled ? "mod-state-active" : "mod-state-disabled");
 
                         top.getChildren().addAll(nameLabel, topSpacer, providerBadge, typeBadge, stateBadge);
@@ -3728,14 +3712,12 @@ public class LauncherUI extends Application {
                         descLabel.setMaxWidth(560);
                         descLabel.setStyle(
                                 "-fx-font-size: 12px;" +
-                                        "-fx-text-fill: #6b7280;"
-                        );
+                                        "-fx-text-fill: #6b7280;");
 
                         Label metaLabel = new Label(item.file.getName() + " · " + formatFileSize(item.file.length()));
                         metaLabel.setStyle(
                                 "-fx-font-size: 11px;" +
-                                        "-fx-text-fill: #9ca3af;"
-                        );
+                                        "-fx-text-fill: #9ca3af;");
 
                         infoBox.getChildren().addAll(top, descLabel, metaLabel);
                         row.getChildren().addAll(iconBox, infoBox);
@@ -3747,7 +3729,7 @@ public class LauncherUI extends Application {
             }
         });
 
-        final Label status = new Label("Cargando...");
+        final Label status = new Label("Loading...");
         status.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
         status.setWrapText(true);
 
@@ -3757,21 +3739,20 @@ public class LauncherUI extends Application {
                 new ChangeListener<InstalledContentInfo>() {
                     @Override
                     public void changed(ObservableValue<? extends InstalledContentInfo> observable,
-                                        InstalledContentInfo oldValue,
-                                        InstalledContentInfo newValue) {
+                            InstalledContentInfo oldValue,
+                            InstalledContentInfo newValue) {
                         boolean selected = newValue != null;
 
                         toggleBtn.setDisable(!selected);
                         deleteBtn.setDisable(!selected);
 
                         if (newValue != null) {
-                            toggleBtn.setText(newValue.enabled ? "Desactivar" : "Activar");
+                            toggleBtn.setText(newValue.enabled ? "Disable" : "Activate");
                         } else {
                             toggleBtn.setText("Activar / Desactivar");
                         }
                     }
-                }
-        );
+                });
 
         contentTypeBox.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -3805,7 +3786,7 @@ public class LauncherUI extends Application {
                         Desktop.getDesktop().open(dir);
                     }
                 } catch (Exception ex) {
-                    status.setText("No se pudo abrir carpeta: " + ex.getMessage());
+                    status.setText("Could not open folder:" + ex.getMessage());
                 }
             }
         });
@@ -3821,12 +3802,12 @@ public class LauncherUI extends Application {
 
                 try {
                     File newFile = toggleContentEnabled(selected.file);
-                    status.setText((selected.enabled ? "Desactivado: " : "Activado: ") + newFile.getName());
+                    status.setText((selected.enabled ? "Disabled:" : "Activated:") + newFile.getName());
 
                     String type = getInstalledContentTypeFromDropdown(contentTypeBox);
                     refreshInstalledContentPanel(type, list, status);
                 } catch (Exception ex) {
-                    status.setText("No se pudo cambiar el estado: " + ex.getMessage());
+                    status.setText("Could not change status:" + ex.getMessage());
                 }
             }
         });
@@ -3841,9 +3822,9 @@ public class LauncherUI extends Application {
                 }
 
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-                confirm.setTitle("Eliminar contenido");
-                confirm.setHeaderText("¿Eliminar este archivo?");
-                confirm.setContentText(selected.name + "\n\nArchivo: " + selected.file.getName());
+                confirm.setTitle("Delete content");
+                confirm.setHeaderText("Delete this file?");
+                confirm.setContentText(selected.name + "\n\nFile:" + selected.file.getName());
 
                 java.util.Optional<ButtonType> result = confirm.showAndWait();
 
@@ -3852,9 +3833,9 @@ public class LauncherUI extends Application {
 
                     if (deleted) {
                         removeMarkersForContentFile(selected.file);
-                        status.setText("Eliminado: " + selected.name);
+                        status.setText("Deleted:" + selected.name);
                     } else {
-                        status.setText("No se pudo eliminar: " + selected.file.getName());
+                        status.setText("Could not delete:" + selected.file.getName());
                     }
 
                     String type = getInstalledContentTypeFromDropdown(contentTypeBox);
@@ -3888,7 +3869,7 @@ public class LauncherUI extends Application {
             return "shader";
         }
 
-        if ("Texturas".equals(value)) {
+        if ("Textures".equals(value)) {
             return "resourcepack";
         }
 
@@ -3911,7 +3892,7 @@ public class LauncherUI extends Application {
             this.file = file;
             this.type = type;
             this.name = file.getName();
-            this.description = "Sin descripción disponible.";
+            this.description = "No description available.";
             this.provider = "Local";
             this.projectId = "";
             this.slug = "";
@@ -3938,18 +3919,18 @@ public class LauncherUI extends Application {
         HBox topBar = new HBox(10);
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        final Button refreshBtn = new Button("Actualizar");
+        final Button refreshBtn = new Button("Update");
         refreshBtn.getStyleClass().add("secondary-button");
 
         final Button toggleBtn = new Button("Activar / Desactivar");
         toggleBtn.getStyleClass().add("button");
         toggleBtn.setDisable(true);
 
-        final Button deleteBtn = new Button("Eliminar");
+        final Button deleteBtn = new Button("Delete");
         deleteBtn.getStyleClass().add("secondary-button");
         deleteBtn.setDisable(true);
 
-        final Button openFolderBtn = new Button("Abrir carpeta");
+        final Button openFolderBtn = new Button("Open folder");
         openFolderBtn.getStyleClass().add("secondary-button");
 
         Region spacer = new Region();
@@ -4000,8 +3981,7 @@ public class LauncherUI extends Application {
                                     item.name == null ? "" : item.name,
                                     item.description == null ? "" : item.description,
                                     item.projectId == null ? "" : item.projectId,
-                                    item.type == null ? "mod" : item.type
-                            );
+                                    item.type == null ? "mod" : item.type);
 
                             fake.iconUrl = item.iconUrl == null ? "" : item.iconUrl;
 
@@ -4018,13 +3998,12 @@ public class LauncherUI extends Application {
                         HBox top = new HBox(8);
                         top.setAlignment(Pos.CENTER_LEFT);
 
-                        Label nameLabel = new Label(item.name == null ? "Contenido" : item.name);
+                        Label nameLabel = new Label(item.name == null ? "Content" : item.name);
                         nameLabel.setMaxWidth(430);
                         nameLabel.setStyle(
                                 "-fx-font-size: 15px;" +
                                         "-fx-font-weight: 800;" +
-                                        "-fx-text-fill: #111827;"
-                        );
+                                        "-fx-text-fill: #111827;");
 
                         Region topSpacer = new Region();
                         HBox.setHgrow(topSpacer, Priority.ALWAYS);
@@ -4042,7 +4021,7 @@ public class LauncherUI extends Application {
                         Label typeBadge = new Label(getContentTypeLabel(item.type));
                         typeBadge.getStyleClass().add("content-type-badge");
 
-                        Label stateBadge = new Label(item.enabled ? "Activo" : "Desactivado");
+                        Label stateBadge = new Label(item.enabled ? "Active" : "Disabled");
                         stateBadge.getStyleClass().add(item.enabled ? "mod-state-active" : "mod-state-disabled");
 
                         top.getChildren().addAll(nameLabel, topSpacer, providerBadge, typeBadge, stateBadge);
@@ -4052,14 +4031,12 @@ public class LauncherUI extends Application {
                         descLabel.setMaxWidth(560);
                         descLabel.setStyle(
                                 "-fx-font-size: 12px;" +
-                                        "-fx-text-fill: #6b7280;"
-                        );
+                                        "-fx-text-fill: #6b7280;");
 
                         Label metaLabel = new Label(item.file.getName() + " · " + formatFileSize(item.file.length()));
                         metaLabel.setStyle(
                                 "-fx-font-size: 11px;" +
-                                        "-fx-text-fill: #9ca3af;"
-                        );
+                                        "-fx-text-fill: #9ca3af;");
 
                         infoBox.getChildren().addAll(top, descLabel, metaLabel);
                         row.getChildren().addAll(iconBox, infoBox);
@@ -4071,7 +4048,7 @@ public class LauncherUI extends Application {
             }
         });
 
-        final Label status = new Label("Cargando...");
+        final Label status = new Label("Loading...");
         status.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
         status.setWrapText(true);
 
@@ -4081,21 +4058,20 @@ public class LauncherUI extends Application {
                 new ChangeListener<InstalledContentInfo>() {
                     @Override
                     public void changed(ObservableValue<? extends InstalledContentInfo> observable,
-                                        InstalledContentInfo oldValue,
-                                        InstalledContentInfo newValue) {
+                            InstalledContentInfo oldValue,
+                            InstalledContentInfo newValue) {
                         boolean selected = newValue != null;
 
                         toggleBtn.setDisable(!selected);
                         deleteBtn.setDisable(!selected);
 
                         if (newValue != null) {
-                            toggleBtn.setText(newValue.enabled ? "Desactivar" : "Activar");
+                            toggleBtn.setText(newValue.enabled ? "Disable" : "Activate");
                         } else {
                             toggleBtn.setText("Activar / Desactivar");
                         }
                     }
-                }
-        );
+                });
 
         refreshBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -4115,7 +4091,7 @@ public class LauncherUI extends Application {
                         Desktop.getDesktop().open(dir);
                     }
                 } catch (Exception ex) {
-                    status.setText("No se pudo abrir carpeta: " + ex.getMessage());
+                    status.setText("Could not open folder:" + ex.getMessage());
                 }
             }
         });
@@ -4131,10 +4107,10 @@ public class LauncherUI extends Application {
 
                 try {
                     File newFile = toggleContentEnabled(selected.file);
-                    status.setText((selected.enabled ? "Desactivado: " : "Activado: ") + newFile.getName());
+                    status.setText((selected.enabled ? "Disabled:" : "Activated:") + newFile.getName());
                     refreshInstalledContentPanel(type, list, status);
                 } catch (Exception ex) {
-                    status.setText("No se pudo cambiar el estado: " + ex.getMessage());
+                    status.setText("Could not change status:" + ex.getMessage());
                 }
             }
         });
@@ -4149,9 +4125,9 @@ public class LauncherUI extends Application {
                 }
 
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-                confirm.setTitle("Eliminar contenido");
-                confirm.setHeaderText("¿Eliminar este archivo?");
-                confirm.setContentText(selected.name + "\n\nArchivo: " + selected.file.getName());
+                confirm.setTitle("Delete content");
+                confirm.setHeaderText("Delete this file?");
+                confirm.setContentText(selected.name + "\n\nFile:" + selected.file.getName());
 
                 java.util.Optional<ButtonType> result = confirm.showAndWait();
 
@@ -4160,9 +4136,9 @@ public class LauncherUI extends Application {
 
                     if (deleted) {
                         removeMarkersForContentFile(selected.file);
-                        status.setText("Eliminado: " + selected.name);
+                        status.setText("Deleted:" + selected.name);
                     } else {
-                        status.setText("No se pudo eliminar: " + selected.file.getName());
+                        status.setText("Could not delete:" + selected.file.getName());
                     }
 
                     refreshInstalledContentPanel(type, list, status);
@@ -4176,8 +4152,8 @@ public class LauncherUI extends Application {
     }
 
     private void refreshInstalledContentPanel(final String type,
-                                              final ListView<InstalledContentInfo> list,
-                                              final Label statusLabel) {
+            final ListView<InstalledContentInfo> list,
+            final Label statusLabel) {
         File dir = getContentDirectory(type);
 
         if (!dir.exists()) {
@@ -4204,7 +4180,7 @@ public class LauncherUI extends Application {
         });
 
         if (files == null || files.length == 0) {
-            statusLabel.setText("No hay " + getContentTypeLabelPlural(type).toLowerCase() + " instalados.");
+            statusLabel.setText("There is no" + getContentTypeLabelPlural(type).toLowerCase() + "installed.");
             return;
         }
 
@@ -4233,9 +4209,8 @@ public class LauncherUI extends Application {
         statusLabel.setText(
                 getContentTypeLabelPlural(type) +
                         ": " + files.length +
-                        " · Activos: " + active +
-                        " · Desactivados: " + disabled
-        );
+                        "· Assets:" + active +
+                        "· Disabled:" + disabled);
     }
 
     private InstalledContentInfo readInstalledContentInfo(File file, String type) {
@@ -4260,7 +4235,7 @@ public class LauncherUI extends Application {
 
             boolean hasRealModName = modInfo.name != null
                     && !modInfo.name.trim().isEmpty()
-                    && !"Mod desconocido".equalsIgnoreCase(modInfo.name.trim())
+                    && !"Unknown mod".equalsIgnoreCase(modInfo.name.trim())
                     && !modInfo.name.equals(file.getName());
 
             if (hasRealModName) {
@@ -4399,7 +4374,8 @@ public class LauncherUI extends Application {
                 }
 
                 if (fileMatches) {
-                    if (current.provider == null || current.provider.trim().isEmpty() || "Local".equalsIgnoreCase(current.provider)) {
+                    if (current.provider == null || current.provider.trim().isEmpty()
+                            || "Local".equalsIgnoreCase(current.provider)) {
                         if (current.projectId != null && current.projectId.toLowerCase().startsWith("curseforge:")) {
                             current.provider = "CurseForge";
                         } else if (current.projectId != null && !current.projectId.trim().isEmpty()) {
@@ -4439,19 +4415,19 @@ public class LauncherUI extends Application {
 
     private String getInstalledContentDescription(String type) {
         if ("shader".equalsIgnoreCase(type)) {
-            return "Shader instalado en la instancia actual.";
+            return "Shader installed on the current instance.";
         }
 
         if ("resourcepack".equalsIgnoreCase(type)) {
-            return "Paquete de texturas instalado en la instancia actual.";
+            return "Texture pack installed on the current instance.";
         }
 
-        return "Contenido instalado en la instancia actual.";
+        return "Content installed on the current instance.";
     }
 
     private String cleanContentFileName(String fileName) {
         if (fileName == null) {
-            return "Contenido desconocido";
+            return "Unknown content";
         }
 
         String name = fileName;
@@ -4471,7 +4447,7 @@ public class LauncherUI extends Application {
         name = name.replace("-", " ").replace("_", " ").trim();
 
         if (name.isEmpty()) {
-            return "Contenido desconocido";
+            return "Unknown content";
         }
 
         return name;
@@ -4479,7 +4455,7 @@ public class LauncherUI extends Application {
 
     private File toggleContentEnabled(File file) throws Exception {
         if (file == null || !file.exists()) {
-            throw new Exception("El archivo no existe.");
+            throw new Exception("The file does not exist.");
         }
 
         String name = file.getName();
@@ -4492,13 +4468,13 @@ public class LauncherUI extends Application {
         }
 
         if (target.exists()) {
-            throw new Exception("Ya existe un archivo con el nombre destino: " + target.getName());
+            throw new Exception("A file with the destination name already exists:" + target.getName());
         }
 
         boolean renamed = file.renameTo(target);
 
         if (!renamed) {
-            throw new Exception("No se pudo renombrar el archivo.");
+            throw new Exception("The file could not be renamed.");
         }
 
         return target;
@@ -4583,7 +4559,7 @@ public class LauncherUI extends Application {
 
             // Si más del 15% de la línea son símbolos raros, la ocultamos.
             if (ratio > 0.15) {
-                return "[linea corrupta omitida]";
+                return "[corrupt line omitted]";
             }
         }
 
@@ -4664,7 +4640,7 @@ public class LauncherUI extends Application {
             double ratio = invalid / (double) total;
 
             if (ratio > 0.15) {
-                return "[linea corrupta omitida]";
+                return "[corrupt line omitted]";
             }
         }
 
@@ -4776,7 +4752,7 @@ public class LauncherUI extends Application {
 
     private void showContentSearchDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Buscar contenido");
+        dialog.setTitle("Search content");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -4785,12 +4761,12 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Buscar contenido");
+        Label title = new Label("Search content");
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         String selectedVersion = getCurrentMinecraftVersionForMods();
 
-        Label subtitle = new Label("Descarga mods, paquetes de textura y shaders para Minecraft " + selectedVersion + ".");
+        Label subtitle = new Label("Download mods, texture packs and shaders for Minecraft" + selectedVersion + ".");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
         subtitle.setWrapText(true);
 
@@ -4805,19 +4781,19 @@ public class LauncherUI extends Application {
         final ComboBox<ContentProviderOption> providerBox = createProviderComboBox();
 
         final ComboBox<String> typeBox = new ComboBox<String>();
-        typeBox.getItems().addAll("Mods", "Texturas", "Shaders", "Modpacks");
+        typeBox.getItems().addAll("Mods", "Textures", "Shaders", "Modpacks");
         typeBox.getSelectionModel().selectFirst();
         typeBox.setPrefWidth(135);
 
         final TextField searchField = new TextField();
-        searchField.setPromptText("Buscar contenido...");
+        searchField.setPromptText("Search content...");
         searchField.getStyleClass().add("text-field");
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
-        final Button searchBtn = new Button("Buscar");
+        final Button searchBtn = new Button("Search");
         searchBtn.getStyleClass().add("button");
 
-        final Button curseForgeKeyBtn = new Button("API Key");
+        final Button curseForgeKeyBtn = new Button("APIKey");
         curseForgeKeyBtn.setVisible(false);
         curseForgeKeyBtn.setManaged(false);
         curseForgeKeyBtn.getStyleClass().add("api-key-button");
@@ -4828,89 +4804,87 @@ public class LauncherUI extends Application {
         resultsList.getStyleClass().add("list-view");
         VBox.setVgrow(resultsList, Priority.ALWAYS);
 
-        resultsList.setCellFactory(new javafx.util.Callback<ListView<ModrinthClient.ModResult>, ListCell<ModrinthClient.ModResult>>() {
-            @Override
-            public ListCell<ModrinthClient.ModResult> call(ListView<ModrinthClient.ModResult> listView) {
-                return new ListCell<ModrinthClient.ModResult>() {
+        resultsList.setCellFactory(
+                new javafx.util.Callback<ListView<ModrinthClient.ModResult>, ListCell<ModrinthClient.ModResult>>() {
                     @Override
-                    protected void updateItem(ModrinthClient.ModResult item, boolean empty) {
-                        super.updateItem(item, empty);
+                    public ListCell<ModrinthClient.ModResult> call(ListView<ModrinthClient.ModResult> listView) {
+                        return new ListCell<ModrinthClient.ModResult>() {
+                            @Override
+                            protected void updateItem(ModrinthClient.ModResult item, boolean empty) {
+                                super.updateItem(item, empty);
 
-                        if (empty || item == null) {
-                            setText(null);
-                            setGraphic(null);
-                            return;
-                        }
+                                if (empty || item == null) {
+                                    setText(null);
+                                    setGraphic(null);
+                                    return;
+                                }
 
-                        HBox row = new HBox(12);
-                        row.setAlignment(Pos.CENTER_LEFT);
-                        row.setPadding(new Insets(10));
+                                HBox row = new HBox(12);
+                                row.setAlignment(Pos.CENTER_LEFT);
+                                row.setPadding(new Insets(10));
 
-                        StackPane iconBox = new StackPane();
-                        iconBox.getStyleClass().add("content-icon-box");
-                        iconBox.setMinSize(54, 54);
-                        iconBox.setPrefSize(54, 54);
-                        iconBox.setMaxSize(54, 54);
+                                StackPane iconBox = new StackPane();
+                                iconBox.getStyleClass().add("content-icon-box");
+                                iconBox.setMinSize(54, 54);
+                                iconBox.setPrefSize(54, 54);
+                                iconBox.setMaxSize(54, 54);
 
-                        loadContentIcon(item, iconBox);
+                                loadContentIcon(item, iconBox);
 
-                        VBox infoBox = new VBox(7);
-                        HBox.setHgrow(infoBox, Priority.ALWAYS);
+                                VBox infoBox = new VBox(7);
+                                HBox.setHgrow(infoBox, Priority.ALWAYS);
 
-                        HBox top = new HBox(8);
-                        top.setAlignment(Pos.CENTER_LEFT);
+                                HBox top = new HBox(8);
+                                top.setAlignment(Pos.CENTER_LEFT);
 
-                        Label nameLabel = new Label(item.title);
-                        nameLabel.setMaxWidth(430);
-                        nameLabel.setStyle(
-                                "-fx-font-size: 15px;" +
-                                        "-fx-font-weight: 800;" +
-                                        "-fx-text-fill: #111827;"
-                        );
+                                Label nameLabel = new Label(item.title);
+                                nameLabel.setMaxWidth(430);
+                                nameLabel.setStyle(
+                                        "-fx-font-size: 15px;" +
+                                                "-fx-font-weight: 800;" +
+                                                "-fx-text-fill: #111827;");
 
-                        Region topSpacer = new Region();
-                        HBox.setHgrow(topSpacer, Priority.ALWAYS);
+                                Region topSpacer = new Region();
+                                HBox.setHgrow(topSpacer, Priority.ALWAYS);
 
-                        Label typeLabel = new Label(getContentTypeLabel(item.projectType));
-                        typeLabel.getStyleClass().add("content-type-badge");
+                                Label typeLabel = new Label(getContentTypeLabel(item.projectType));
+                                typeLabel.getStyleClass().add("content-type-badge");
 
-                        Label providerLabel = new Label(getProviderLabelForResult(item));
-                        providerLabel.getStyleClass().add(getProviderStyleClassForResult(item));
+                                Label providerLabel = new Label(getProviderLabelForResult(item));
+                                providerLabel.getStyleClass().add(getProviderStyleClassForResult(item));
 
-                        top.getChildren().addAll(nameLabel, topSpacer, providerLabel, typeLabel);
+                                top.getChildren().addAll(nameLabel, topSpacer, providerLabel, typeLabel);
 
-                        Label descLabel = new Label(item.description == null ? "" : item.description);
-                        descLabel.setWrapText(true);
-                        descLabel.setMaxWidth(560);
-                        descLabel.setStyle(
-                                "-fx-font-size: 12px;" +
-                                        "-fx-text-fill: #6b7280;"
-                        );
+                                Label descLabel = new Label(item.description == null ? "" : item.description);
+                                descLabel.setWrapText(true);
+                                descLabel.setMaxWidth(560);
+                                descLabel.setStyle(
+                                        "-fx-font-size: 12px;" +
+                                                "-fx-text-fill: #6b7280;");
 
-                        Label idLabel = new Label("Slug: " + item.slug + " · Project ID: " + item.projectId);
-                        idLabel.setStyle(
-                                "-fx-font-size: 11px;" +
-                                        "-fx-text-fill: #9ca3af;"
-                        );
+                                Label idLabel = new Label("Slug:" + item.slug + "· Project ID:" + item.projectId);
+                                idLabel.setStyle(
+                                        "-fx-font-size: 11px;" +
+                                                "-fx-text-fill: #9ca3af;");
 
-                        infoBox.getChildren().addAll(top, descLabel, idLabel);
-                        row.getChildren().addAll(iconBox, infoBox);
+                                infoBox.getChildren().addAll(top, descLabel, idLabel);
+                                row.getChildren().addAll(iconBox, infoBox);
 
-                        setText(null);
-                        setGraphic(row);
+                                setText(null);
+                                setGraphic(row);
+                            }
+                        };
                     }
-                };
-            }
-        });
+                });
 
         HBox bottomBar = new HBox(10);
         bottomBar.setAlignment(Pos.CENTER_LEFT);
 
-        final Button installBtn = new Button("Instalar seleccionado");
+        final Button installBtn = new Button("Install selected");
         installBtn.getStyleClass().add("launch-button");
         installBtn.setDisable(true);
 
-        final Button openTargetFolderBtn = new Button("Abrir carpeta destino");
+        final Button openTargetFolderBtn = new Button("Open destination folder");
         openTargetFolderBtn.getStyleClass().add("secondary-button");
 
         Region bottomSpacer = new Region();
@@ -4918,7 +4892,7 @@ public class LauncherUI extends Application {
 
         bottomBar.getChildren().addAll(installBtn, openTargetFolderBtn, bottomSpacer);
 
-        final Label status = new Label("Cargando contenido popular...");
+        final Label status = new Label("Loading popular content...");
         status.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
         status.setWrapText(true);
 
@@ -4934,9 +4908,9 @@ public class LauncherUI extends Application {
                 showCurseForgeApiKeyDialog();
 
                 if (hasCurseForgeApiKey()) {
-                    status.setText("CurseForge API Key configurada.");
+                    status.setText("CurseForge API Key configured.");
                 } else {
-                    status.setText("CurseForge seleccionado, pero falta configurar la API Key.");
+                    status.setText("CurseForge selected, but the API Key needs to be configured.");
                 }
             }
         });
@@ -4945,12 +4919,11 @@ public class LauncherUI extends Application {
                 new ChangeListener<ModrinthClient.ModResult>() {
                     @Override
                     public void changed(ObservableValue<? extends ModrinthClient.ModResult> observable,
-                                        ModrinthClient.ModResult oldValue,
-                                        ModrinthClient.ModResult newValue) {
+                            ModrinthClient.ModResult oldValue,
+                            ModrinthClient.ModResult newValue) {
                         updateContentInstallButtonState(newValue, installBtn, status);
                     }
-                }
-        );
+                });
 
         EventHandler<ActionEvent> doSearch = new EventHandler<ActionEvent>() {
             @Override
@@ -4961,11 +4934,11 @@ public class LauncherUI extends Application {
                 if (isCurseForgeProvider(provider)) {
                     if (!ensureCurseForgeApiKey()) {
                         resultsList.getItems().clear();
-                        installBtn.setText("Instalar seleccionado");
+                        installBtn.setText("Install selected");
                         installBtn.setDisable(true);
                         searchBtn.setDisable(false);
 
-                        status.setText("CurseForge seleccionado, pero falta configurar la API Key.");
+                        status.setText("CurseForge selected, but the API Key needs to be configured.");
                         return;
                     }
 
@@ -4980,15 +4953,16 @@ public class LauncherUI extends Application {
                     resultsList.getItems().clear();
                     searchBtn.setDisable(true);
                     installBtn.setDisable(true);
-                    installBtn.setText("Instalar seleccionado");
+                    installBtn.setText("Install selected");
 
-                    status.setText("Buscando " + getContentTypeLabel(type).toLowerCase() + " en CurseForge...");
+                    status.setText("Searching" + getContentTypeLabel(type).toLowerCase() + "in CurseForge...");
 
                     Thread t = new Thread(new Runnable() {
                         @Override
                         public void run() {
                             try {
-                                final List<ModrinthClient.ModResult> results = CurseForgeClient.searchProjects(apiKey, query, type);
+                                final List<ModrinthClient.ModResult> results = CurseForgeClient.searchProjects(apiKey,
+                                        query, type);
 
                                 Platform.runLater(new Runnable() {
                                     @Override
@@ -4997,9 +4971,9 @@ public class LauncherUI extends Application {
                                         searchBtn.setDisable(false);
 
                                         if (results.isEmpty()) {
-                                            status.setText("No se encontraron resultados en CurseForge.");
+                                            status.setText("No results found on CurseForge.");
                                         } else {
-                                            status.setText("Se encontraron " + results.size() + " resultados en CurseForge.");
+                                            status.setText("Found" + results.size() + "results on CurseForge.");
                                         }
                                     }
                                 });
@@ -5008,7 +4982,7 @@ public class LauncherUI extends Application {
                                     @Override
                                     public void run() {
                                         searchBtn.setDisable(false);
-                                        status.setText("Error buscando en CurseForge: " + ex.getMessage());
+                                        status.setText("Error searching CurseForge:" + ex.getMessage());
                                     }
                                 });
                             }
@@ -5030,9 +5004,9 @@ public class LauncherUI extends Application {
                 resultsList.getItems().clear();
                 searchBtn.setDisable(true);
                 installBtn.setDisable(true);
-                installBtn.setText("Instalar seleccionado");
+                installBtn.setText("Install selected");
 
-                status.setText("Buscando " + getContentTypeLabel(type).toLowerCase() + " en Modrinth...");
+                status.setText("Searching" + getContentTypeLabel(type).toLowerCase() + "in Modrinth...");
 
                 Thread t = new Thread(new Runnable() {
                     @Override
@@ -5047,9 +5021,9 @@ public class LauncherUI extends Application {
                                     searchBtn.setDisable(false);
 
                                     if (results.isEmpty()) {
-                                        status.setText("No se encontraron resultados.");
+                                        status.setText("No results found.");
                                     } else {
-                                        status.setText("Se encontraron " + results.size() + " resultados.");
+                                        status.setText("Found" + results.size() + "results.");
                                     }
                                 }
                             });
@@ -5058,7 +5032,7 @@ public class LauncherUI extends Application {
                                 @Override
                                 public void run() {
                                     searchBtn.setDisable(false);
-                                    status.setText("Error buscando contenido: " + ex.getMessage());
+                                    status.setText("Error searching for content:" + ex.getMessage());
                                 }
                             });
                         }
@@ -5092,13 +5066,13 @@ public class LauncherUI extends Application {
                 curseForgeKeyBtn.setManaged(curseForge);
 
                 if (isModrinthProvider(provider)) {
-                    searchField.setPromptText("Buscar en Modrinth...");
+                    searchField.setPromptText("Search Modrinth...");
                 } else {
-                    searchField.setPromptText("Buscar en CurseForge...");
+                    searchField.setPromptText("Search CurseForge...");
                 }
 
                 searchField.clear();
-                installBtn.setText("Instalar seleccionado");
+                installBtn.setText("Install selected");
                 installBtn.setDisable(true);
 
                 loadProviderPopularContent(providerBox, typeBox, resultsList, searchBtn, installBtn, status);
@@ -5112,14 +5086,15 @@ public class LauncherUI extends Application {
                 final ModrinthClient.ModResult selected = resultsList.getSelectionModel().getSelectedItem();
 
                 if (selected == null) {
-                    status.setText("Selecciona un resultado primero.");
+                    status.setText("Select a result first.");
                     return;
                 }
 
-                if (isContentInstalled(selected.projectId, selected.projectType) || isLogicalContentInstalled(selected)) {
-                    installBtn.setText("Ya instalado");
+                if (isContentInstalled(selected.projectId, selected.projectType)
+                        || isLogicalContentInstalled(selected)) {
+                    installBtn.setText("Already installed");
                     installBtn.setDisable(true);
-                    status.setText("Este contenido o un equivalente ya está instalado.");
+                    status.setText("This content or an equivalent is already installed.");
                     return;
                 }
 
@@ -5130,12 +5105,12 @@ public class LauncherUI extends Application {
                 try {
                     selectedVersionFile = showContentVersionSelectionDialog(selected, provider, mcVersion);
                 } catch (Exception ex) {
-                    status.setText("Error cargando versiones: " + ex.getMessage());
+                    status.setText("Error loading versions:" + ex.getMessage());
                     return;
                 }
 
                 if (selectedVersionFile == null) {
-                    status.setText("Instalación cancelada.");
+                    status.setText("Installation canceled.");
                     return;
                 }
 
@@ -5151,11 +5126,11 @@ public class LauncherUI extends Application {
                     if (!ensureCurseForgeApiKey()) {
                         installBtn.setDisable(false);
                         searchBtn.setDisable(false);
-                        status.setText("Falta configurar la API Key de CurseForge.");
+                        status.setText("The CurseForge API Key is missing to be configured.");
                         return;
                     }
 
-                    status.setText("Instalando desde CurseForge: " + selected.title + "...");
+                    status.setText("Installing from CurseForge:" + selected.title + "...");
 
                     Thread t = new Thread(new Runnable() {
                         @Override
@@ -5165,17 +5140,16 @@ public class LauncherUI extends Application {
                                         selected,
                                         selectedVersionFile,
                                         status,
-                                        downloadProgressBar
-                                );
+                                        downloadProgressBar);
 
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         searchBtn.setDisable(false);
-                                        installBtn.setText("Ya instalado");
+                                        installBtn.setText("Already installed");
                                         installBtn.setDisable(true);
-                                        status.setText("Instalado desde CurseForge: " + installedFile.getName());
-                                        showToast("Instalado: " + installedFile.getName(), "success");
+                                        status.setText("Installed from CurseForge:" + installedFile.getName());
+                                        showToast("Installed:" + installedFile.getName(), "success");
                                         downloadProgressBar.setVisible(false);
                                         downloadProgressBar.setProgress(0);
                                     }
@@ -5185,13 +5159,13 @@ public class LauncherUI extends Application {
                                     @Override
                                     public void run() {
                                         searchBtn.setDisable(false);
-                                        installBtn.setText("Instalar seleccionado");
+                                        installBtn.setText("Install selected");
                                         installBtn.setDisable(false);
-                                        status.setText("Error instalando desde CurseForge: " + ex.getMessage());
+                                        status.setText("Error installing from CurseForge:" + ex.getMessage());
                                         ex.printStackTrace();
                                         downloadProgressBar.setVisible(false);
                                         downloadProgressBar.setProgress(0);
-                                        showToast("Error instalando contenido", "error");
+                                        showToast("Error installing content", "error");
                                         downloadProgressBar.setVisible(false);
                                         downloadProgressBar.setProgress(0);
                                     }
@@ -5205,7 +5179,7 @@ public class LauncherUI extends Application {
                     return;
                 }
 
-                status.setText("Instalando desde Modrinth: " + selected.title + "...");
+                status.setText("Installing from Modrinth:" + selected.title + "...");
                 downloadProgressBar.setVisible(false);
                 downloadProgressBar.setProgress(0);
 
@@ -5217,17 +5191,17 @@ public class LauncherUI extends Application {
                                     selected,
                                     selectedVersionFile,
                                     status,
-                                    downloadProgressBar
-                            );
+                                    downloadProgressBar);
 
                             Platform.runLater(new Runnable() {
                                 @Override
                                 public void run() {
                                     searchBtn.setDisable(false);
-                                    installBtn.setText("Ya instalado");
+                                    installBtn.setText("Already installed");
                                     installBtn.setDisable(true);
-                                    status.setText("Instalado correctamente junto con sus dependencias: " + installedFile.getName());
-                                    showToast("Instalado: " + installedFile.getName(), "success");
+                                    status.setText("Correctly installed along with its dependencies:"
+                                            + installedFile.getName());
+                                    showToast("Installed:" + installedFile.getName(), "success");
                                     downloadProgressBar.setVisible(false);
                                     downloadProgressBar.setProgress(0);
                                 }
@@ -5238,16 +5212,16 @@ public class LauncherUI extends Application {
                                 public void run() {
                                     searchBtn.setDisable(false);
 
-                                    String msg = ex.getMessage() == null ? "Error desconocido" : ex.getMessage();
+                                    String msg = ex.getMessage() == null ? "Unknown error" : ex.getMessage();
 
-                                    if (msg.toLowerCase().contains("ya está instalado")) {
-                                        installBtn.setText("Ya instalado");
+                                    if (msg.toLowerCase().contains("it is already installed")) {
+                                        installBtn.setText("Already installed");
                                         installBtn.setDisable(true);
                                         status.setText(msg);
                                     } else {
-                                        installBtn.setText("Instalar seleccionado");
+                                        installBtn.setText("Install selected");
                                         installBtn.setDisable(false);
-                                        status.setText("Error instalando desde Modrinth: " + msg);
+                                        status.setText("Error installing from Modrinth:" + msg);
                                     }
 
                                     ex.printStackTrace();
@@ -5262,8 +5236,6 @@ public class LauncherUI extends Application {
             }
         });
 
-
-
         openTargetFolderBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -5276,7 +5248,7 @@ public class LauncherUI extends Application {
                         Desktop.getDesktop().open(dir);
                     }
                 } catch (Exception ex) {
-                    status.setText("No se pudo abrir la carpeta: " + ex.getMessage());
+                    status.setText("Could not open folder:" + ex.getMessage());
                 }
             }
         });
@@ -5321,7 +5293,7 @@ public class LauncherUI extends Application {
 
     private void showSettingsDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Ajustes");
+        dialog.setTitle("Settings");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -5330,10 +5302,10 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Ajustes");
+        Label title = new Label("Settings");
         title.setStyle("-fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label subtitle = new Label("Configura el launcher, proveedores, caché y carpetas.");
+        Label subtitle = new Label("Configure the launcher, providers, cache and folders.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
         subtitle.setWrapText(true);
 
@@ -5352,15 +5324,15 @@ public class LauncherUI extends Application {
         VBox providersCard = new VBox(12);
         providersCard.getStyleClass().add("namemc-card");
 
-        Label providersTitle = new Label("Proveedores");
+        Label providersTitle = new Label("Suppliers");
         providersTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
         Label curseForgeStatus = new Label(hasCurseForgeApiKey()
-                ? "CurseForge API Key configurada."
-                : "CurseForge API Key no configurada.");
+                ? "CurseForge API Key configured."
+                : "CurseForge API Key not configured.");
         curseForgeStatus.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
 
-        Button configureCurseForgeBtn = new Button("Configurar CurseForge API Key");
+        Button configureCurseForgeBtn = new Button("Configure CurseForge API Key");
         configureCurseForgeBtn.getStyleClass().add("button");
 
         configureCurseForgeBtn.setOnAction(new EventHandler<ActionEvent>() {
@@ -5368,8 +5340,8 @@ public class LauncherUI extends Application {
             public void handle(ActionEvent event) {
                 showCurseForgeApiKeyDialog();
                 curseForgeStatus.setText(hasCurseForgeApiKey()
-                        ? "CurseForge API Key configurada."
-                        : "CurseForge API Key no configurada.");
+                        ? "CurseForge API Key configured."
+                        : "CurseForge API Key not configured.");
             }
         });
 
@@ -5381,15 +5353,15 @@ public class LauncherUI extends Application {
         VBox appearanceCard = new VBox(12);
         appearanceCard.getStyleClass().add("namemc-card");
 
-        Label appearanceTitle = new Label("Apariencia");
+        Label appearanceTitle = new Label("Appearance");
         appearanceTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
         final ComboBox<String> themeBox = new ComboBox<String>();
-        themeBox.getItems().addAll("Claro", "Oscuro (próximamente)");
-        themeBox.getSelectionModel().select(prefs.get("theme", "Claro"));
+        themeBox.getItems().addAll("Sure", "Dark (coming soon)");
+        themeBox.getSelectionModel().select(prefs.get("theme", "Sure"));
         themeBox.setMaxWidth(Double.MAX_VALUE);
 
-        Label themeHint = new Label("El tema oscuro quedará preparado para el siguiente paso.");
+        Label themeHint = new Label("The dark theme will be prepared for the next step.");
         themeHint.setWrapText(true);
         themeHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
@@ -5399,11 +5371,11 @@ public class LauncherUI extends Application {
                 String selected = themeBox.getValue();
 
                 if (selected == null) {
-                    selected = "Claro";
+                    selected = "Sure";
                 }
 
                 prefs.put("theme", selected);
-                statusLabel.setText("Tema seleccionado: " + selected);
+                statusLabel.setText("Selected topic:" + selected);
             }
         });
 
@@ -5415,26 +5387,26 @@ public class LauncherUI extends Application {
         VBox foldersCard = new VBox(12);
         foldersCard.getStyleClass().add("namemc-card");
 
-        Label foldersTitle = new Label("Carpetas");
+        Label foldersTitle = new Label("Folders");
         foldersTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label launcherPath = new Label("Launcher: " + getLauncherDataDir().getAbsolutePath());
+        Label launcherPath = new Label("Launcher:" + getLauncherDataDir().getAbsolutePath());
         launcherPath.setWrapText(true);
         launcherPath.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
-        Label instancesPath = new Label("Instancias: " + InstanceManager.getBaseDir().getAbsolutePath());
+        Label instancesPath = new Label("Instances:" + InstanceManager.getBaseDir().getAbsolutePath());
         instancesPath.setWrapText(true);
         instancesPath.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
         HBox folderButtons = new HBox(10);
 
-        Button openLauncherFolderBtn = new Button("Abrir launcher");
+        Button openLauncherFolderBtn = new Button("Open launcher");
         openLauncherFolderBtn.getStyleClass().add("secondary-button");
 
-        Button openInstancesFolderBtn = new Button("Abrir instancias");
+        Button openInstancesFolderBtn = new Button("Open instances");
         openInstancesFolderBtn.getStyleClass().add("secondary-button");
 
-        Button openMinecraftFolderBtn = new Button("Abrir .minecraft");
+        Button openMinecraftFolderBtn = new Button("Open .minecraft");
         openMinecraftFolderBtn.getStyleClass().add("secondary-button");
 
         folderButtons.getChildren().addAll(openLauncherFolderBtn, openInstancesFolderBtn, openMinecraftFolderBtn);
@@ -5468,19 +5440,19 @@ public class LauncherUI extends Application {
         VBox cacheCard = new VBox(12);
         cacheCard.getStyleClass().add("namemc-card");
 
-        Label cacheTitle = new Label("Caché y logs");
+        Label cacheTitle = new Label("Cache and logs");
         cacheTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label cacheInfo = new Label("Puedes limpiar la caché de iconos o borrar el log del launcher.");
+        Label cacheInfo = new Label("You can clear the icon cache or clear the launcher log.");
         cacheInfo.setWrapText(true);
         cacheInfo.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
 
         HBox cacheButtons = new HBox(10);
 
-        Button clearIconCacheBtn = new Button("Limpiar iconos");
+        Button clearIconCacheBtn = new Button("Clean icons");
         clearIconCacheBtn.getStyleClass().add("secondary-button");
 
-        Button clearLogsBtn = new Button("Limpiar logs");
+        Button clearLogsBtn = new Button("Clear logs");
         clearLogsBtn.getStyleClass().add("secondary-button");
 
         cacheButtons.getChildren().addAll(clearIconCacheBtn, clearLogsBtn);
@@ -5490,9 +5462,9 @@ public class LauncherUI extends Application {
             public void handle(ActionEvent event) {
                 try {
                     deleteDirectory(new File(getLauncherDataDir(), "icon-cache"));
-                    statusLabel.setText("Caché de iconos limpiada.");
+                    statusLabel.setText("Icon cache cleared.");
                 } catch (Exception ex) {
-                    statusLabel.setText("Error limpiando caché: " + ex.getMessage());
+                    statusLabel.setText("Error clearing cache:" + ex.getMessage());
                 }
             }
         });
@@ -5507,9 +5479,9 @@ public class LauncherUI extends Application {
                         logFile.delete();
                     }
 
-                    statusLabel.setText("Logs limpiados. Reinicia el launcher para recrear el archivo.");
+                    statusLabel.setText("Cleaned logs. Restart the launcher to recreate the file.");
                 } catch (Exception ex) {
-                    statusLabel.setText("Error limpiando logs: " + ex.getMessage());
+                    statusLabel.setText("Error cleaning logs:" + ex.getMessage());
                 }
             }
         });
@@ -5525,11 +5497,12 @@ public class LauncherUI extends Application {
         Label javaTitle = new Label("Java runtimes");
         javaTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label javaInfo = new Label("Los runtimes Java se descargan automáticamente cuando una versión de Minecraft lo requiere.");
+        Label javaInfo = new Label(
+                "Java runtimes are downloaded automatically when a version of Minecraft requires it.");
         javaInfo.setWrapText(true);
         javaInfo.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
 
-        Button openRuntimesBtn = new Button("Abrir runtimes");
+        Button openRuntimesBtn = new Button("Open runtimes");
         openRuntimesBtn.getStyleClass().add("secondary-button");
 
         openRuntimesBtn.setOnAction(new EventHandler<ActionEvent>() {
@@ -5547,46 +5520,47 @@ public class LauncherUI extends Application {
         VBox systemCard = new VBox(12);
         systemCard.getStyleClass().add("namemc-card");
 
-        Label systemTitle = new Label("Sistema");
+        Label systemTitle = new Label("System");
         systemTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label osLabel = new Label("Sistema operativo: " + PlatformManager.getOS());
+        Label osLabel = new Label("Operating system:" + PlatformManager.getOS());
         osLabel.setWrapText(true);
         osLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #374151;");
 
-        Label archLabel = new Label("Arquitectura: " + PlatformManager.getAdoptiumArch());
+        Label archLabel = new Label("Architecture:" + PlatformManager.getAdoptiumArch());
         archLabel.setWrapText(true);
         archLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #374151;");
 
-        Label mcDirLabel = new Label("Minecraft: " + VersionManager.MC_DIR.getAbsolutePath());
+        Label mcDirLabel = new Label("Echo:" + VersionManager.MC_DIR.getAbsolutePath());
         mcDirLabel.setWrapText(true);
         mcDirLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
-        Label launcherDirLabel = new Label("Launcher: " + getLauncherDataDir().getAbsolutePath());
+        Label launcherDirLabel = new Label("Launcher:" + getLauncherDataDir().getAbsolutePath());
         launcherDirLabel.setWrapText(true);
         launcherDirLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
-        Label instancesDirLabel = new Label("Instancias: " + InstanceManager.getBaseDir().getAbsolutePath());
+        Label instancesDirLabel = new Label("Instances:" + InstanceManager.getBaseDir().getAbsolutePath());
         instancesDirLabel.setWrapText(true);
         instancesDirLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
-        Label runtimesDirLabel = new Label("Runtimes Java: " + new File(getLauncherDataDir(), "runtimes").getAbsolutePath());
+        Label runtimesDirLabel = new Label(
+                "Java Runtimes:" + new File(getLauncherDataDir(), "runtimes").getAbsolutePath());
         runtimesDirLabel.setWrapText(true);
         runtimesDirLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
         HBox systemButtonsRow1 = new HBox(10);
         HBox systemButtonsRow2 = new HBox(10);
 
-        Button openMcDirBtn = new Button("Abrir Minecraft");
+        Button openMcDirBtn = new Button("Open Minecraft");
         openMcDirBtn.getStyleClass().add("secondary-button");
 
-        Button openLauncherDirBtn = new Button("Abrir launcher");
+        Button openLauncherDirBtn = new Button("Open launcher");
         openLauncherDirBtn.getStyleClass().add("secondary-button");
 
-        Button openInstancesDirBtn = new Button("Abrir instancias");
+        Button openInstancesDirBtn = new Button("Open instances");
         openInstancesDirBtn.getStyleClass().add("secondary-button");
 
-        Button openRuntimesDirBtn = new Button("Abrir runtimes");
+        Button openRuntimesDirBtn = new Button("Open runtimes");
         openRuntimesDirBtn.getStyleClass().add("secondary-button");
 
         systemButtonsRow1.getChildren().addAll(openMcDirBtn, openLauncherDirBtn);
@@ -5629,13 +5603,12 @@ public class LauncherUI extends Application {
                 instancesDirLabel,
                 runtimesDirLabel,
                 systemButtonsRow1,
-                systemButtonsRow2
-        );
+                systemButtonsRow2);
 
         HBox footer = new HBox(10);
         footer.setAlignment(Pos.CENTER_RIGHT);
 
-        Button closeBtn = new Button("Cerrar");
+        Button closeBtn = new Button("Close");
         closeBtn.getStyleClass().add("button");
 
         closeBtn.setOnAction(new EventHandler<ActionEvent>() {
@@ -5654,8 +5627,7 @@ public class LauncherUI extends Application {
                 cacheCard,
                 javaCard,
                 systemCard,
-                footer
-        );
+                footer);
 
         scroll.setContent(content);
 
@@ -5689,7 +5661,7 @@ public class LauncherUI extends Application {
         try {
             PlatformManager.openFolder(folder);
         } catch (Exception ex) {
-            statusLabel.setText("No se pudo abrir carpeta: " + ex.getMessage());
+            statusLabel.setText("Could not open folder:" + ex.getMessage());
         }
     }
 
@@ -5709,7 +5681,7 @@ public class LauncherUI extends Application {
         }
 
         if (!file.delete()) {
-            System.err.println("No se pudo borrar: " + file.getAbsolutePath());
+            System.err.println("Could not delete:" + file.getAbsolutePath());
         }
     }
 
@@ -5759,8 +5731,6 @@ public class LauncherUI extends Application {
 
         return new File(getContentRegistryDirectory(), "logical-" + safeType + "-" + safeKey + ".txt");
     }
-
-
 
     private boolean isLogicalContentInstalled(ModrinthClient.ModResult item) {
         if (item == null) {
@@ -5816,7 +5786,7 @@ public class LauncherUI extends Application {
             writer.println("file=" + file.getAbsolutePath());
             writer.println("installedAt=" + java.time.LocalDateTime.now());
         } catch (Exception ex) {
-            System.err.println("No se pudo guardar marcador lógico: " + ex.getMessage());
+            System.err.println("Could not save logical bookmark:" + ex.getMessage());
         } finally {
             if (writer != null) {
                 writer.close();
@@ -5859,31 +5829,31 @@ public class LauncherUI extends Application {
     }
 
     private File installCurseForgeContentWithDependencies(ModrinthClient.ModResult selected,
-                                                          String mcVersion,
-                                                          Label statusLabel,
-                                                          ProgressBar progressBar) throws Exception {
+            String mcVersion,
+            Label statusLabel,
+            ProgressBar progressBar) throws Exception {
         java.util.Set<String> installing = new java.util.HashSet<String>();
         return installCurseForgeContentRecursive(selected, mcVersion, statusLabel, progressBar, installing, 0);
     }
 
     private File installCurseForgeContentRecursive(ModrinthClient.ModResult selected,
-                                                   String mcVersion,
-                                                   Label statusLabel,
-                                                   ProgressBar progressBar,
-                                                   java.util.Set<String> installing,
-                                                   int depth) throws Exception {
+            String mcVersion,
+            Label statusLabel,
+            ProgressBar progressBar,
+            java.util.Set<String> installing,
+            int depth) throws Exception {
         if (selected == null) {
-            throw new Exception("No hay contenido seleccionado.");
+            throw new Exception("There is no selected content.");
         }
 
         if (depth > 10) {
-            throw new Exception("Demasiadas dependencias anidadas.");
+            throw new Exception("Too many nested dependencies.");
         }
 
         String apiKey = getCurseForgeApiKey();
 
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            throw new Exception("CurseForge API Key no configurada.");
+            throw new Exception("CurseForge API Key not configured.");
         }
 
         String type = selected.projectType == null || selected.projectType.trim().isEmpty()
@@ -5893,7 +5863,7 @@ public class LauncherUI extends Application {
         String projectId = selected.projectId;
 
         if (projectId == null || projectId.trim().isEmpty()) {
-            throw new Exception("Project ID inválido.");
+            throw new Exception("Invalid Project ID.");
         }
 
         if (isContentInstalled(projectId, type)) {
@@ -5905,12 +5875,12 @@ public class LauncherUI extends Application {
         }
 
         if (installing.contains(projectId)) {
-            throw new Exception("Dependencia circular detectada: " + projectId);
+            throw new Exception("Circular dependency detected:" + projectId);
         }
 
         installing.add(projectId);
 
-        final String resolving = "Resolviendo " + selected.title + " desde CurseForge...";
+        final String resolving = "Solving" + selected.title + "from CurseForge...";
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
@@ -5922,8 +5892,7 @@ public class LauncherUI extends Application {
                 apiKey,
                 projectId,
                 mcVersion,
-                type
-        );
+                type);
 
         if (fileData.dependencyProjectIds != null && !fileData.dependencyProjectIds.isEmpty()) {
             for (String depProjectId : fileData.dependencyProjectIds) {
@@ -5938,12 +5907,11 @@ public class LauncherUI extends Application {
                 ModrinthClient.ModResult depResult = new ModrinthClient.ModResult(
                         depProjectId,
                         depProjectId,
-                        "Dependencia requerida de CurseForge",
+                        "CurseForge Required Dependency",
                         depProjectId,
-                        "mod"
-                );
+                        "mod");
 
-                final String depStatus = "Instalando dependencia CurseForge: " + depProjectId;
+                final String depStatus = "Installing CurseForge dependency:" + depProjectId;
 
                 Platform.runLater(new Runnable() {
                     @Override
@@ -5952,11 +5920,12 @@ public class LauncherUI extends Application {
                     }
                 });
 
-                installCurseForgeContentRecursive(depResult, mcVersion, statusLabel, progressBar, installing, depth + 1);
+                installCurseForgeContentRecursive(depResult, mcVersion, statusLabel, progressBar, installing,
+                        depth + 1);
             }
         }
 
-        final String downloading = "Descargando " + selected.title + " desde CurseForge...";
+        final String downloading = "Downloading" + selected.title + "from CurseForge...";
 
         Platform.runLater(new Runnable() {
             @Override
@@ -5982,8 +5951,7 @@ public class LauncherUI extends Application {
                 targetFile,
                 statusLabel,
                 progressBar,
-                selected.title
-        );
+                selected.title);
 
         markContentInstalled(projectId, type, selected.title, targetFile);
         markLogicalContentInstalled(selected, targetFile);
@@ -5994,10 +5962,10 @@ public class LauncherUI extends Application {
     }
 
     private void downloadFileWithProgress(final String urlStr,
-                                          final File targetFile,
-                                          final Label statusLabel,
-                                          final ProgressBar progressBar,
-                                          final String displayName) throws Exception {
+            final File targetFile,
+            final Label statusLabel,
+            final ProgressBar progressBar,
+            final String displayName) throws Exception {
         targetFile.getParentFile().mkdirs();
 
         java.net.HttpURLConnection conn = null;
@@ -6034,7 +6002,7 @@ public class LauncherUI extends Application {
                 } catch (Exception ignored) {
                 }
 
-                throw new Exception("HTTP " + code + " al descargar archivo. " + body);
+                throw new Exception("HTTP" + code + "when downloading file." + body);
             }
 
             final long totalBytes = conn.getContentLengthLong();
@@ -6053,7 +6021,7 @@ public class LauncherUI extends Application {
                     }
 
                     if (statusLabel != null) {
-                        statusLabel.setText("Descargando " + displayName + "...");
+                        statusLabel.setText("Downloading" + displayName + "...");
                     }
                 }
             });
@@ -6085,16 +6053,14 @@ public class LauncherUI extends Application {
                                     int percent = (int) ((currentDownloaded * 100) / totalBytes);
 
                                     statusLabel.setText(
-                                            "Descargando " + displayName + "... " +
+                                            "Downloading" + displayName + "... " +
                                                     percent + "% · " +
                                                     formatBytes(currentDownloaded) + " / " +
-                                                    formatBytes(totalBytes)
-                                    );
+                                                    formatBytes(totalBytes));
                                 } else {
                                     statusLabel.setText(
-                                            "Descargando " + displayName + "... " +
-                                                    formatBytes(currentDownloaded)
-                                    );
+                                            "Downloading" + displayName + "... " +
+                                                    formatBytes(currentDownloaded));
                                 }
                             }
 
@@ -6110,7 +6076,7 @@ public class LauncherUI extends Application {
             out = null;
 
             if (tempFile.length() == 0) {
-                throw new Exception("La descarga quedó vacía.");
+                throw new Exception("The download was empty.");
             }
 
             if (targetFile.exists()) {
@@ -6118,7 +6084,7 @@ public class LauncherUI extends Application {
             }
 
             if (!tempFile.renameTo(targetFile)) {
-                throw new Exception("No se pudo mover el archivo descargado a su destino.");
+                throw new Exception("Could not move the downloaded file to its destination.");
             }
 
             Platform.runLater(new Runnable() {
@@ -6129,7 +6095,7 @@ public class LauncherUI extends Application {
                     }
 
                     if (statusLabel != null) {
-                        statusLabel.setText("Descarga completada: " + targetFile.getName());
+                        statusLabel.setText("Download completed:" + targetFile.getName());
                     }
                 }
             });
@@ -6176,7 +6142,7 @@ public class LauncherUI extends Application {
 
     private File installContentFromModrinth(ModrinthClient.ModResult selected, String mcVersion) throws Exception {
         if (selected == null) {
-            throw new Exception("No hay contenido seleccionado.");
+            throw new Exception("There is no selected content.");
         }
 
         String type = selected.projectType;
@@ -6189,17 +6155,16 @@ public class LauncherUI extends Application {
             File existing = findInstalledContentFile(selected.projectId, type);
 
             if (existing != null && existing.exists()) {
-                throw new Exception("Este contenido ya está instalado: " + existing.getName());
+                throw new Exception("This content is already installed:" + existing.getName());
             }
 
-            throw new Exception("Este contenido ya está marcado como instalado.");
+            throw new Exception("This content is already marked as installed.");
         }
 
         ModrinthClient.ModVersionFile fileData = ModrinthClient.getLatestVersionFile(
                 selected.projectId,
                 mcVersion,
-                type
-        );
+                type);
 
         File targetDir = getContentDirectory(type);
         targetDir.mkdirs();
@@ -6209,7 +6174,7 @@ public class LauncherUI extends Application {
 
         if (targetFile.exists() && targetFile.length() > 0) {
             markContentInstalled(selected.projectId, type, selected.title, targetFile);
-            throw new Exception("Este contenido ya está instalado: " + targetFile.getName());
+            throw new Exception("This content is already installed:" + targetFile.getName());
         }
 
         downloadModFile(fileData.url, targetFile);
@@ -6222,7 +6187,7 @@ public class LauncherUI extends Application {
     private String getSelectedContentType(ComboBox<String> typeBox) {
         String value = typeBox.getValue();
 
-        if ("Texturas".equals(value)) {
+        if ("Textures".equals(value)) {
             return "resourcepack";
         }
 
@@ -6239,7 +6204,7 @@ public class LauncherUI extends Application {
 
     private String getContentTypeLabel(String type) {
         if ("resourcepack".equalsIgnoreCase(type)) {
-            return "Textura";
+            return "Texture";
         }
 
         if ("shader".equalsIgnoreCase(type)) {
@@ -6267,51 +6232,52 @@ public class LauncherUI extends Application {
         return new File(gameDir, "mods");
     }
 
-    private void updateContentInstallButtonState(ModrinthClient.ModResult selected, Button installBtn, Label statusLabel) {
+    private void updateContentInstallButtonState(ModrinthClient.ModResult selected, Button installBtn,
+            Label statusLabel) {
         if (selected == null) {
-            installBtn.setText("Instalar seleccionado");
+            installBtn.setText("Install selected");
             installBtn.setDisable(true);
             return;
         }
 
         if (isContentInstalled(selected.projectId, selected.projectType) || isLogicalContentInstalled(selected)) {
-            installBtn.setText("Ya instalado");
+            installBtn.setText("Already installed");
             installBtn.setDisable(true);
 
             File installed = findInstalledContentFile(selected.projectId, selected.projectType);
 
             if (installed != null && installed.exists()) {
-                statusLabel.setText("Ya instalado: " + installed.getName());
+                statusLabel.setText("Already installed:" + installed.getName());
             } else {
-                statusLabel.setText("Este contenido o su equivalente ya estaba instalado.");
+                statusLabel.setText("This content or its equivalent was already installed.");
             }
 
             return;
         }
 
-        installBtn.setText("Instalar seleccionado");
+        installBtn.setText("Install selected");
         installBtn.setDisable(false);
-        statusLabel.setText("Seleccionado: " + selected.title);
+        statusLabel.setText("Selected:" + selected.title);
     }
 
     private void showCosmeticsDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Cosméticos");
+        dialog.setTitle("Cosmetics");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         VBox root = new VBox(18);
         root.setPadding(new Insets(24));
         root.getStyleClass().add("cosmetics-root");
 
-        Label title = new Label("Cosméticos");
+        Label title = new Label("Cosmetics");
         title.getStyleClass().add("namemc-title");
 
-        Label subtitle = new Label("Selecciona una skin y una capa para previsualizarlas en 3D.");
+        Label subtitle = new Label("Select a skin and layer to preview them in 3D.");
         subtitle.getStyleClass().add("muted-label");
         subtitle.setWrapText(true);
 
-        VBox skinCard = createCosmeticCard("Skin", "Formato recomendado: skin clásica o slim en PNG.");
-        VBox capeCard = createCosmeticCard("Capa", "Formato recomendado: capa Minecraft 64x32 o 64x64 en PNG.");
+        VBox skinCard = createCosmeticCard("Skin", "Recommended format: classic or slim skin in PNG.");
+        VBox capeCard = createCosmeticCard("Layer", "Recommended format: Minecraft layer 64x32 or 64x64 in PNG.");
 
         final Label skinPathLabel = new Label(getSkinLabelText());
         skinPathLabel.getStyleClass().add("path-label");
@@ -6321,34 +6287,34 @@ public class LauncherUI extends Application {
         capePathLabel.getStyleClass().add("path-label");
         capePathLabel.setWrapText(true);
 
-        Button chooseSkinBtn = new Button("Elegir Skin");
+        Button chooseSkinBtn = new Button("Choose Skin");
         chooseSkinBtn.getStyleClass().add("button");
 
-        Button removeSkinBtn = new Button("Quitar Skin");
+        Button removeSkinBtn = new Button("Remove Skin");
         removeSkinBtn.getStyleClass().add("secondary-button");
 
-        Button chooseCapeBtn = new Button("Elegir Capa");
+        Button chooseCapeBtn = new Button("Choose Layer");
         chooseCapeBtn.getStyleClass().add("button");
 
-        Button removeCapeBtn = new Button("Quitar Capa");
+        Button removeCapeBtn = new Button("Remove Layer");
         removeCapeBtn.getStyleClass().add("secondary-button");
 
-        Button viewerBtn = new Button("Abrir Visor 3D");
+        Button viewerBtn = new Button("Open 3D Viewer");
         viewerBtn.getStyleClass().add("launch-button");
         viewerBtn.setMaxWidth(Double.MAX_VALUE);
 
-        Button openSkinsFolderBtn = new Button("Abrir carpeta de skins");
+        Button openSkinsFolderBtn = new Button("Open skins folder");
         openSkinsFolderBtn.getStyleClass().add("secondary-button");
         openSkinsFolderBtn.setMaxWidth(Double.MAX_VALUE);
 
-        Button closeBtn = new Button("Cerrar");
+        Button closeBtn = new Button("Close");
         closeBtn.getStyleClass().add("secondary-button");
         closeBtn.setMaxWidth(Double.MAX_VALUE);
 
         chooseSkinBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                File selected = choosePngFile(dialog, "Elegir skin PNG");
+                File selected = choosePngFile(dialog, "Choose skin PNG");
 
                 if (selected != null) {
                     selectedSkinFile = selected;
@@ -6372,7 +6338,7 @@ public class LauncherUI extends Application {
         chooseCapeBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                File selected = choosePngFile(dialog, "Elegir capa PNG");
+                File selected = choosePngFile(dialog, "Choose PNG layer");
 
                 if (selected != null) {
                     selectedCapeFile = selected;
@@ -6427,8 +6393,7 @@ public class LauncherUI extends Application {
                 capeCard,
                 viewerBtn,
                 openSkinsFolderBtn,
-                closeBtn
-        );
+                closeBtn);
 
         closeBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -6468,8 +6433,7 @@ public class LauncherUI extends Application {
         FileChooser chooser = new FileChooser();
         chooser.setTitle(title);
         chooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Imagen PNG", "*.png")
-        );
+                new FileChooser.ExtensionFilter("PNG Image", "*.png"));
 
         File skinsDir = new File(VersionManager.MC_DIR, "skins");
 
@@ -6487,7 +6451,7 @@ public class LauncherUI extends Application {
             return selectedSkinFile.getName();
         }
 
-        return "Usando skin por nombre de usuario.";
+        return "Using skin by username.";
     }
 
     private String getCapeLabelText() {
@@ -6495,7 +6459,7 @@ public class LauncherUI extends Application {
             return selectedCapeFile.getName();
         }
 
-        return "Sin capa seleccionada.";
+        return "No layer selected.";
     }
 
     private String buildSkinViewerHtml(String skinSource, String capeSource) {
@@ -6663,7 +6627,7 @@ public class LauncherUI extends Application {
                 + "return;"
                 + "}"
                 + "if(typeof skinview3d==='undefined'){"
-                + "showError('No se pudo cargar skinview3d. Revisa tu conexión a internet.');"
+                + "showError('Skinview3d could not be loaded. Check your internet connection.');"
                 + "return;"
                 + "}"
                 + "const canvas=document.getElementById('skin_container');"
@@ -6690,7 +6654,7 @@ public class LauncherUI extends Application {
                 + "}"
                 + "loading.style.display='none';"
                 + "}catch(e){"
-                + "showError('No se pudo cargar el visor 3D: '+e.message);"
+                + "showError('Could not load 3D viewer: '+e.message);"
                 + "}"
                 + "});"
                 + "</script>"
@@ -6744,15 +6708,14 @@ public class LauncherUI extends Application {
     }
 
     private void loadContentIcon(final String iconUrl,
-                                 final String type,
-                                 final StackPane iconBox) {
+            final String type,
+            final StackPane iconBox) {
         ModrinthClient.ModResult temp = new ModrinthClient.ModResult(
                 "",
                 "",
                 "",
                 "",
-                type == null ? "mod" : type
-        );
+                type == null ? "mod" : type);
 
         temp.iconUrl = iconUrl;
 
@@ -6760,7 +6723,7 @@ public class LauncherUI extends Application {
     }
 
     private void loadContentIcon(final ModrinthClient.ModResult item,
-                                 final StackPane iconBox) {
+            final StackPane iconBox) {
         iconBox.getChildren().clear();
 
         String type = item == null ? "mod" : item.projectType;
@@ -6828,7 +6791,7 @@ public class LauncherUI extends Application {
                             break;
                         } catch (Exception ex) {
                             lastError = ex;
-                            System.err.println("[IconCache] Falló candidato: " + url + " | " + ex.getMessage());
+                            System.err.println("[IconCache] Candidate failed:" + url + " | " + ex.getMessage());
                         }
                     }
 
@@ -6837,7 +6800,7 @@ public class LauncherUI extends Application {
                             throw lastError;
                         }
 
-                        throw new Exception("No hay URLs candidatas para icono.");
+                        throw new Exception("There are no candidate URLs for icon.");
                     }
 
                     final Image image = new Image(cachedFile.toURI().toString(), 54, 54, true, true, false);
@@ -6860,7 +6823,7 @@ public class LauncherUI extends Application {
                         cachedFile.delete();
                     }
                 } catch (Exception ex) {
-                    System.err.println("[IconCache] No se pudo cargar icono de "
+                    System.err.println("[IconCache] Could not load icon"
                             + item.title + " | projectId=" + item.projectId + " | " + ex.getMessage());
                 }
             }
@@ -7017,7 +6980,7 @@ public class LauncherUI extends Application {
             int code = conn.getResponseCode();
 
             if (code < 200 || code >= 300) {
-                throw new Exception("HTTP " + code);
+                throw new Exception("HTTP" + code);
             }
 
             String contentType = conn.getContentType();
@@ -7026,7 +6989,7 @@ public class LauncherUI extends Application {
                 String lowerType = contentType.toLowerCase();
 
                 if (lowerType.contains("webp") || lowerType.contains("svg")) {
-                    throw new Exception("Formato no soportado sin librería externa: " + contentType);
+                    throw new Exception("Format not supported without external library:" + contentType);
                 }
             }
 
@@ -7035,14 +6998,13 @@ public class LauncherUI extends Application {
             BufferedImage original = ImageIO.read(in);
 
             if (original == null) {
-                throw new Exception("ImageIO no pudo leer la imagen.");
+                throw new Exception("ImageIO could not read the image.");
             }
 
             BufferedImage converted = new BufferedImage(
                     original.getWidth(),
                     original.getHeight(),
-                    BufferedImage.TYPE_INT_ARGB
-            );
+                    BufferedImage.TYPE_INT_ARGB);
 
             java.awt.Graphics2D g = converted.createGraphics();
 
@@ -7055,7 +7017,7 @@ public class LauncherUI extends Application {
             boolean written = ImageIO.write(converted, "png", tempFile);
 
             if (!written || tempFile.length() == 0) {
-                throw new Exception("No se pudo convertir icono a PNG.");
+                throw new Exception("Could not convert icon to PNG.");
             }
 
             if (targetFile.exists()) {
@@ -7063,7 +7025,7 @@ public class LauncherUI extends Application {
             }
 
             if (!tempFile.renameTo(targetFile)) {
-                throw new Exception("No se pudo guardar icono en caché.");
+                throw new Exception("Failed to cache icon.");
             }
         } finally {
             if (in != null) {
@@ -7103,14 +7065,13 @@ public class LauncherUI extends Application {
                     usernameField.getScene() == null ? null : usernameField.getScene().getWindow(),
                     usernameField.getText(),
                     selectedSkinFile,
-                    selectedCapeFile
-            );
+                    selectedCapeFile);
         } catch (Exception ex) {
             ex.printStackTrace();
 
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
-            alert.setHeaderText("No se pudo abrir el visor 3D");
+            alert.setHeaderText("Could not open 3D viewer");
             alert.setContentText(ex.getMessage());
             alert.showAndWait();
         }
@@ -7129,22 +7090,21 @@ public class LauncherUI extends Application {
 
         java.nio.file.Files.write(
                 htmlFile.toPath(),
-                html.getBytes(StandardCharsets.UTF_8)
-        );
+                html.getBytes(StandardCharsets.UTF_8));
 
         return htmlFile;
     }
 
     private void showGraphicsPackDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Pack Gráfico");
+        dialog.setTitle("Graphic Pack");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         root.setStyle("-fx-background-color: #1e1e2e;");
 
-        Label title = new Label("Instalar Pack Gráfico");
+        Label title = new Label("Install Graphic Pack");
         title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #f9e2af;");
 
         String selectedVersion = "ninguna";
@@ -7153,26 +7113,25 @@ public class LauncherUI extends Application {
         }
 
         Label info = new Label(
-                "Versión seleccionada: " + selectedVersion + "\n\n" +
-                        "Este pack instalará mods recomendados para mejorar gráficos y rendimiento:\n" +
+                "Selected version:" + selectedVersion + "\n\n" +
+                        "This pack will install recommended mods to improve graphics and performance:\n" +
                         "• Sodium\n" +
                         "• Iris Shaders\n" +
-                        "• Sodium Extra\n" +
+                        "• Extra Sodium\n" +
                         "• Reese's Sodium Options\n" +
                         "• Indium\n" +
                         "• Entity Model Features\n" +
                         "• Entity Texture Features\n" +
                         "• Continuity\n\n" +
-                        "Después podrás activar shaders dentro del juego."
-        );
+                        "Then you can activate shaders within the game.");
         info.setWrapText(true);
         info.setStyle("-fx-text-fill: #cdd6f4; -fx-font-size: 13px;");
 
-        final CheckBox installShaderCheck = new CheckBox("Instalar shaderpack Complementary Reimagined");
+        final CheckBox installShaderCheck = new CheckBox("Install shaderpack Complementary Reimagined");
         installShaderCheck.setSelected(true);
         installShaderCheck.setStyle("-fx-text-fill: #cdd6f4;");
 
-        final Label statusLbl = new Label("Listo para instalar.");
+        final Label statusLbl = new Label("Ready to install.");
         statusLbl.setWrapText(true);
         statusLbl.setStyle("-fx-text-fill: #a6adc8;");
 
@@ -7180,15 +7139,15 @@ public class LauncherUI extends Application {
         bar.setMaxWidth(Double.MAX_VALUE);
         bar.setVisible(false);
 
-        Button installBtn = new Button("Instalar Pack Gráfico");
+        Button installBtn = new Button("Install Graphic Pack");
         installBtn.getStyleClass().add("launch-button");
         installBtn.setMaxWidth(Double.MAX_VALUE);
 
-        Button openShaderFolderBtn = new Button("Abrir carpeta shaderpacks");
+        Button openShaderFolderBtn = new Button("Open shaderpacks folder");
         openShaderFolderBtn.getStyleClass().add("secondary-button");
         openShaderFolderBtn.setMaxWidth(Double.MAX_VALUE);
 
-        Button closeBtn = new Button("Cerrar");
+        Button closeBtn = new Button("Close");
         closeBtn.getStyleClass().add("secondary-button");
         closeBtn.setMaxWidth(Double.MAX_VALUE);
 
@@ -7213,7 +7172,7 @@ public class LauncherUI extends Application {
                         Desktop.getDesktop().open(shaderpacksDir);
                     }
                 } catch (Exception ex) {
-                    statusLbl.setText("No se pudo abrir la carpeta shaderpacks: " + ex.getMessage());
+                    statusLbl.setText("Could not open shaderpacks folder:" + ex.getMessage());
                 }
             }
         });
@@ -7233,8 +7192,7 @@ public class LauncherUI extends Application {
                 bar,
                 installBtn,
                 openShaderFolderBtn,
-                closeBtn
-        );
+                closeBtn);
 
         Scene scene = new Scene(root, 520, 560);
 
@@ -7248,7 +7206,7 @@ public class LauncherUI extends Application {
     }
 
     private void installGraphicsPack(final Label statusLbl, final Button installBtn, final ProgressBar bar,
-                                     final boolean installShader) {
+            final boolean installShader) {
         final VersionEntry selected = versionBox.getValue();
 
         if (selected == null) {
@@ -7276,15 +7234,15 @@ public class LauncherUI extends Application {
                     File shaderpacksDir = new File(VersionManager.MC_DIR, "shaderpacks");
                     shaderpacksDir.mkdirs();
 
-                    String[][] mods = new String[][]{
-                            {"sodium", "Sodium"},
-                            {"iris", "Iris Shaders"},
-                            {"sodium-extra", "Sodium Extra"},
-                            {"reeses-sodium-options", "Reese's Sodium Options"},
-                            {"indium", "Indium"},
-                            {"entity-model-features", "Entity Model Features"},
-                            {"entitytexturefeatures", "Entity Texture Features"},
-                            {"continuity", "Continuity"}
+                    String[][] mods = new String[][] {
+                            { "sodium", "Sodium" },
+                            { "iris", "Iris Shaders" },
+                            { "sodium-extra", "Extra Sodium" },
+                            { "reeses-sodium-options", "Reese's Sodium Options" },
+                            { "indium", "Indium" },
+                            { "entity-model-features", "Entity Model Features" },
+                            { "entitytexturefeatures", "Entity Texture Features" },
+                            { "continuity", "Continuity" }
                     };
 
                     for (int i = 0; i < mods.length; i++) {
@@ -7294,7 +7252,7 @@ public class LauncherUI extends Application {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                statusLbl.setText("Instalando " + displayName + " para Minecraft " + mcVersion + "...");
+                                statusLbl.setText("Installing" + displayName + "for Minecraft" + mcVersion + "...");
                             }
                         });
 
@@ -7309,7 +7267,8 @@ public class LauncherUI extends Application {
                         } catch (Exception ex) {
                             failed++;
                             errors.append("• ").append(displayName).append(": ").append(ex.getMessage()).append("\n");
-                            System.err.println("[GraphicsPack] Error installing " + displayName + ": " + ex.getMessage());
+                            System.err.println("to install [GraphicsPack] Error installing" + displayName + ": "
+                                    + ex.getMessage());
                         }
                     }
 
@@ -7317,7 +7276,7 @@ public class LauncherUI extends Application {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                statusLbl.setText("Instalando shaderpack Complementary Reimagined...");
+                                statusLbl.setText("Installing shaderpack Complementary Reimagined...");
                             }
                         });
 
@@ -7325,8 +7284,7 @@ public class LauncherUI extends Application {
                             boolean didInstallShader = installModrinthProjectToFolder(
                                     "complementary-reimagined",
                                     mcVersion,
-                                    shaderpacksDir
-                            );
+                                    shaderpacksDir);
 
                             if (didInstallShader) {
                                 installed++;
@@ -7335,8 +7293,8 @@ public class LauncherUI extends Application {
                             }
                         } catch (Exception ex) {
                             failed++;
-                            errors.append("• Complementary Reimagined: ").append(ex.getMessage()).append("\n");
-                            System.err.println("[GraphicsPack] Error installing shaderpack: " + ex.getMessage());
+                            errors.append("• Complementary Reimagined:").append(ex.getMessage()).append("\n");
+                            System.err.println("[GraphicsPack] Error installing shaderpack:" + ex.getMessage());
                         }
                     }
 
@@ -7347,16 +7305,16 @@ public class LauncherUI extends Application {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            String msg = "Pack gráfico terminado.\n\n" +
-                                    "Instalados: " + finalInstalled + "\n" +
-                                    "Ya existentes: " + finalSkipped + "\n" +
-                                    "Fallidos: " + finalFailed + "\n\n";
+                            String msg = "Finished graphic pack.\n\n" +
+                                    "Installed:" + finalInstalled + "\n" +
+                                    "Already existing:" + finalSkipped + "\n" +
+                                    "Failed:" + finalFailed + "\n\n";
 
                             if (finalFailed > 0) {
                                 msg += "Errores:\n" + errors.toString() + "\n";
                             }
 
-                            msg += "Ahora abre Minecraft, ve a Opciones > Video > Shader Packs y activa el shader.";
+                            msg += "Now open Minecraft, go to Options > Video > Shader Packs and activate the shader.";
 
                             statusLbl.setText(msg);
                             installBtn.setDisable(false);
@@ -7368,7 +7326,7 @@ public class LauncherUI extends Application {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            statusLbl.setText("Error instalando pack gráfico: " + ex.getMessage());
+                            statusLbl.setText("Error installing graphic pack:" + ex.getMessage());
                             installBtn.setDisable(false);
                             bar.setVisible(false);
                         }
@@ -7378,7 +7336,8 @@ public class LauncherUI extends Application {
         }, "Graphics-Pack-Installer").start();
     }
 
-    private boolean installModrinthProjectToFolder(String slugOrProjectId, String mcVersion, File targetFolder) throws Exception {
+    private boolean installModrinthProjectToFolder(String slugOrProjectId, String mcVersion, File targetFolder)
+            throws Exception {
         targetFolder.mkdirs();
 
         ModrinthClient.ModVersionFile fileData = ModrinthClient.getLatestVersionFile(slugOrProjectId, mcVersion);
@@ -7387,14 +7346,14 @@ public class LauncherUI extends Application {
         File targetFile = new File(targetFolder, safeName);
 
         if (targetFile.exists() && targetFile.length() > 0) {
-            System.out.println("[GraphicsPack] Already installed: " + targetFile.getName());
+            System.out.println("[GraphicsPack] Already installed:" + targetFile.getName());
             return false;
         }
 
-        System.out.println("[GraphicsPack] Downloading " + fileData.url);
+        System.out.println("[GraphicsPack] Downloading" + fileData.url);
         downloadFile(fileData.url, targetFile);
 
-        System.out.println("[GraphicsPack] Installed: " + targetFile.getAbsolutePath());
+        System.out.println("[GraphicsPack] Installed:" + targetFile.getAbsolutePath());
         return true;
     }
 
@@ -7417,7 +7376,7 @@ public class LauncherUI extends Application {
             int code = conn.getResponseCode();
 
             if (code < 200 || code >= 300) {
-                throw new Exception("HTTP " + code + " al descargar " + urlStr);
+                throw new Exception("HTTP" + code + "when downloading" + urlStr);
             }
 
             in = conn.getInputStream();
@@ -7497,30 +7456,28 @@ public class LauncherUI extends Application {
         return card;
     }
 
-
     private File installModFromModrinth(ModrinthClient.ModResult selected, String mcVersion) throws Exception {
         if (selected == null) {
-            throw new Exception("No hay ningún mod seleccionado.");
+            throw new Exception("There are no mods selected.");
         }
 
         if (mcVersion == null || mcVersion.trim().isEmpty()) {
-            throw new Exception("Selecciona una versión de Minecraft primero.");
+            throw new Exception("Select a version of Minecraft first.");
         }
 
         if (isModrinthProjectInstalled(selected.projectId)) {
             File existing = findInstalledFileByProjectId(selected.projectId);
 
             if (existing != null && existing.exists()) {
-                throw new Exception("Este mod ya está instalado: " + existing.getName());
+                throw new Exception("This mod is already installed:" + existing.getName());
             }
 
-            throw new Exception("Este mod ya está marcado como instalado.");
+            throw new Exception("This mod is already marked as installed.");
         }
 
         ModrinthClient.ModVersionFile fileData = ModrinthClient.getLatestVersionFile(
                 selected.projectId,
-                mcVersion
-        );
+                mcVersion);
 
         File modsDir = getModsDirectory();
         modsDir.mkdirs();
@@ -7530,7 +7487,7 @@ public class LauncherUI extends Application {
 
         if (targetFile.exists() && targetFile.length() > 0) {
             markModrinthProjectInstalled(selected.projectId, selected.title, targetFile);
-            throw new Exception("Este mod ya está instalado: " + targetFile.getName());
+            throw new Exception("This mod is already installed:" + targetFile.getName());
         }
 
         downloadModFile(fileData.url, targetFile);
@@ -7558,7 +7515,7 @@ public class LauncherUI extends Application {
         });
 
         if (files == null || files.length == 0) {
-            statusLabel.setText("No hay mods instalados.");
+            statusLabel.setText("There are no mods installed.");
             return;
         }
 
@@ -7573,7 +7530,7 @@ public class LauncherUI extends Application {
             installedList.getItems().add(file);
         }
 
-        statusLabel.setText("Mods instalados: " + files.length);
+        statusLabel.setText("Installed mods:" + files.length);
     }
 
     private File getModsDirectory() {
@@ -7702,7 +7659,7 @@ public class LauncherUI extends Application {
             writer.println("file=" + file.getAbsolutePath());
             writer.println("installedAt=" + java.time.LocalDateTime.now());
         } catch (Exception ex) {
-            System.err.println("No se pudo guardar registro del contenido: " + ex.getMessage());
+            System.err.println("Could not save record of content:" + ex.getMessage());
         } finally {
             if (writer != null) {
                 writer.close();
@@ -7811,7 +7768,7 @@ public class LauncherUI extends Application {
             int code = conn.getResponseCode();
 
             if (code < 200 || code >= 300) {
-                throw new Exception("HTTP " + code + " al descargar el mod.");
+                throw new Exception("HTTP" + code + "when downloading the mod.");
             }
 
             in = conn.getInputStream();
@@ -7901,14 +7858,14 @@ public class LauncherUI extends Application {
                 listView.getItems().add(f.getName());
             }
         } else {
-            listView.getItems().add("(No se encontraron archivos)");
+            listView.getItems().add("(No files found)");
             listView.setDisable(true);
         }
 
         HBox buttons = new HBox(10);
         buttons.setAlignment(Pos.CENTER_RIGHT);
 
-        Button openFolderBtn = new Button("Abrir Carpeta en Windows");
+        Button openFolderBtn = new Button("Open Folder in Windows");
         openFolderBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -7921,7 +7878,7 @@ public class LauncherUI extends Application {
             }
         });
 
-        Button closeBtn = new Button("Cerrar");
+        Button closeBtn = new Button("Close");
         closeBtn.getStyleClass().add("secondary-button");
         closeBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -7953,7 +7910,7 @@ public class LauncherUI extends Application {
 
         if (profiles.isEmpty()) {
             Profile defaultProfile = new Profile(
-                    "Principal",
+                    "Main",
                     usernameField.getText() == null || usernameField.getText().trim().isEmpty()
                             ? "Steve"
                             : usernameField.getText().trim(),
@@ -7961,8 +7918,7 @@ public class LauncherUI extends Application {
                     versionBox != null && versionBox.getValue() != null ? versionBox.getValue().id : "",
                     "vanilla",
                     selectedSkinFile != null ? selectedSkinFile.getAbsolutePath() : "",
-                    selectedCapeFile != null ? selectedCapeFile.getAbsolutePath() : ""
-            );
+                    selectedCapeFile != null ? selectedCapeFile.getAbsolutePath() : "");
 
             profiles.add(defaultProfile);
 
@@ -7992,9 +7948,9 @@ public class LauncherUI extends Application {
     }
 
     private void createNewProfile() {
-        TextInputDialog dialog = new TextInputDialog("Nuevo perfil");
-        dialog.setTitle("Crear perfil");
-        dialog.setHeaderText("Nombre del nuevo perfil");
+        TextInputDialog dialog = new TextInputDialog("New profile");
+        dialog.setTitle("Create profile");
+        dialog.setHeaderText("Name of the new profile");
         dialog.setContentText("Nombre:");
 
         java.util.Optional<String> result = dialog.showAndWait();
@@ -8006,12 +7962,12 @@ public class LauncherUI extends Application {
         String name = result.get() == null ? "" : result.get().trim();
 
         if (name.isEmpty()) {
-            statusLabel.setText("El nombre del perfil no puede estar vacío.");
+            statusLabel.setText("The profile name cannot be empty.");
             return;
         }
 
         if (profileNameExists(name)) {
-            statusLabel.setText("Ya existe un perfil con ese nombre.");
+            statusLabel.setText("A profile with that name already exists.");
             return;
         }
 
@@ -8023,10 +7979,10 @@ public class LauncherUI extends Application {
             profileBox.getItems().setAll(profiles);
             profileBox.getSelectionModel().select(profile);
             prefs.put("lastProfileName", profile.name);
-            statusLabel.setText("Perfil creado: " + profile.name);
+            statusLabel.setText("Profile created:" + profile.name);
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusLabel.setText("Error guardando perfil: " + ex.getMessage());
+            statusLabel.setText("Error saving profile:" + ex.getMessage());
         }
     }
 
@@ -8053,10 +8009,10 @@ public class LauncherUI extends Application {
             profileBox.getItems().setAll(profiles);
             profileBox.getSelectionModel().select(current);
             prefs.put("lastProfileName", selected.name);
-            statusLabel.setText("Perfil guardado: " + selected.name);
+            statusLabel.setText("Saved profile:" + selected.name);
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusLabel.setText("Error guardando perfil: " + ex.getMessage());
+            statusLabel.setText("Error saving profile:" + ex.getMessage());
         }
     }
 
@@ -8064,18 +8020,18 @@ public class LauncherUI extends Application {
         final Profile selected = profileBox.getValue();
 
         if (selected == null) {
-            statusLabel.setText("No hay perfil seleccionado.");
+            statusLabel.setText("There is no profile selected.");
             return;
         }
 
         if (profiles.size() <= 1) {
-            statusLabel.setText("No puedes eliminar el único perfil.");
+            statusLabel.setText("You cannot delete the only profile.");
             return;
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Eliminar perfil");
-        confirm.setHeaderText("¿Eliminar este perfil?");
+        confirm.setTitle("Delete profile");
+        confirm.setHeaderText("Delete this profile?");
         confirm.setContentText(selected.name);
 
         java.util.Optional<ButtonType> result = confirm.showAndWait();
@@ -8096,10 +8052,10 @@ public class LauncherUI extends Application {
                 prefs.put("lastProfileName", profileBox.getValue().name);
             }
 
-            statusLabel.setText("Perfil eliminado: " + selected.name);
+            statusLabel.setText("Deleted profile:" + selected.name);
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusLabel.setText("Error eliminando perfil: " + ex.getMessage());
+            statusLabel.setText("Error deleting profile:" + ex.getMessage());
         }
     }
 
@@ -8152,13 +8108,11 @@ public class LauncherUI extends Application {
 
             prefs.put("lastProfileName", profile.name == null ? "" : profile.name);
 
-            statusLabel.setText("Perfil aplicado: " + profile.name);
+            statusLabel.setText("Applied profile:" + profile.name);
         } finally {
             applyingProfile = false;
         }
     }
-
-
 
     private Profile buildProfileFromCurrentState(String name) {
         String username = usernameField.getText() == null ? "" : usernameField.getText().trim();
@@ -8189,8 +8143,7 @@ public class LauncherUI extends Application {
                 version,
                 detectProfileType(version),
                 skinPath,
-                capePath
-        );
+                capePath);
     }
 
     private boolean profileNameExists(String name) {
@@ -8302,7 +8255,7 @@ public class LauncherUI extends Application {
         CrashAnalyzer.CrashInfo info = crash.getCrashInfo();
 
         Stage dialog = new Stage();
-        dialog.setTitle("Minecraft se cerró con error");
+        dialog.setTitle("Minecraft closed with error");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -8314,7 +8267,7 @@ public class LauncherUI extends Application {
         Label title = new Label(info.title);
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: 800; -fx-text-fill: #dc2626;");
 
-        Label subtitle = new Label("Código de salida: " + crash.getExitCode());
+        Label subtitle = new Label("Exit code:" + crash.getExitCode());
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
 
         header.getChildren().addAll(title, subtitle);
@@ -8325,7 +8278,7 @@ public class LauncherUI extends Application {
         VBox causeCard = new VBox(8);
         causeCard.getStyleClass().add("namemc-card");
 
-        Label causeTitle = new Label("Causa probable");
+        Label causeTitle = new Label("Probable cause");
         causeTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         Label causeText = new Label(info.cause);
@@ -8337,7 +8290,7 @@ public class LauncherUI extends Application {
         VBox solutionCard = new VBox(8);
         solutionCard.getStyleClass().add("namemc-card");
 
-        Label solutionTitle = new Label("Solución recomendada");
+        Label solutionTitle = new Label("Recommended solution");
         solutionTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         Label solutionText = new Label(info.solution);
@@ -8349,7 +8302,7 @@ public class LauncherUI extends Application {
         VBox detailsCard = new VBox(8);
         detailsCard.getStyleClass().add("namemc-card");
 
-        Label detailsTitle = new Label("Detalles técnicos");
+        Label detailsTitle = new Label("Technical details");
         detailsTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: 800; -fx-text-fill: #111827;");
 
         TextArea detailsArea = new TextArea(info.details);
@@ -8363,21 +8316,20 @@ public class LauncherUI extends Application {
         HBox buttons = new HBox(10);
         buttons.setAlignment(Pos.CENTER_RIGHT);
 
-        Button copyBtn = new Button("Copiar diagnóstico");
+        Button copyBtn = new Button("Copy diagnosis");
         copyBtn.getStyleClass().add("secondary-button");
 
-        Button closeBtn = new Button("Cerrar");
+        Button closeBtn = new Button("Close");
         closeBtn.getStyleClass().add("button");
 
         copyBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                String text =
-                        "Título: " + crash.getCrashInfo().title + "\n\n" +
-                                "Causa: " + crash.getCrashInfo().cause + "\n\n" +
-                                "Solución: " + crash.getCrashInfo().solution + "\n\n" +
-                                "Detalles:\n" + crash.getCrashInfo().details + "\n\n" +
-                                "Log completo:\n" + crash.getGameLog();
+                String text = "Title:" + crash.getCrashInfo().title + "\n\n" +
+                        "Cause:" + crash.getCrashInfo().cause + "\n\n" +
+                        "Solution:" + crash.getCrashInfo().solution + "\n\n" +
+                        "Detalles:\n" + crash.getCrashInfo().details + "\n\n" +
+                        "Complete log:\n" + crash.getGameLog();
 
                 javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
                 content.putString(text);
@@ -8415,7 +8367,7 @@ public class LauncherUI extends Application {
 
     private void loadVersions() {
         System.out.println("Starting loadVersions...");
-        statusLabel.setText("Cargando lista de versiones...");
+        statusLabel.setText("Loading version list...");
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -8425,10 +8377,10 @@ public class LauncherUI extends Application {
                 try {
                     System.out.println("Task starting, calling VersionManager.getVersions()");
                     List<VersionEntry> versions = VersionManager.getVersions();
-                    System.out.println("Got " + versions.size() + " versions, returning...");
+                    System.out.println("Got" + versions.size() + "versions, returning...");
                     return versions;
                 } catch (Exception e) {
-                    System.out.println("Error in Task.call(): " + e.getMessage());
+                    System.out.println("Error in Task.call():" + e.getMessage());
                     e.printStackTrace();
                     throw e;
                 }
@@ -8441,8 +8393,8 @@ public class LauncherUI extends Application {
                 System.out.println("Task SUCCEEDED, updating UI...");
                 try {
                     allVersions = task.getValue();
-                    System.out.println("Retrieved value, items: " + allVersions.size());
-                    
+                    System.out.println("Retrieved value, items:" + allVersions.size());
+
                     // Ensure we update UI on JavaFX thread
                     Platform.runLater(() -> {
                         try {
@@ -8451,12 +8403,14 @@ public class LauncherUI extends Application {
 
                             Instance selectedInst = getCurrentInstance();
 
-                            if (selectedInstance != null && selectedInstance.version != null && !selectedInstance.version.trim().isEmpty()) {
+                            if (selectedInstance != null && selectedInstance.version != null
+                                    && !selectedInstance.version.trim().isEmpty()) {
                                 selectVersionById(selectedInstance.version);
                             } else {
                                 Profile selectedProfile = profileBox == null ? null : profileBox.getValue();
 
-                                if (selectedProfile != null && selectedProfile.version != null && !selectedProfile.version.trim().isEmpty()) {
+                                if (selectedProfile != null && selectedProfile.version != null
+                                        && !selectedProfile.version.trim().isEmpty()) {
                                     selectVersionById(selectedProfile.version);
                                 } else {
                                     String lastVer = prefs.get("lastVersion", "");
@@ -8474,16 +8428,16 @@ public class LauncherUI extends Application {
                                 }
                             }
 
-                            statusLabel.setText("Listo para jugar.");
+                            statusLabel.setText("Ready to play.");
                             progressBar.setVisible(false);
-                            System.out.println("UI updated with " + allVersions.size() + " versions");
+                            System.out.println("UI updated with" + allVersions.size() + "versions");
                         } catch (Exception e) {
-                            System.out.println("Error in Platform.runLater: " + e.getMessage());
+                            System.out.println("Error in Platform.runLater:" + e.getMessage());
                             e.printStackTrace();
                         }
                     });
                 } catch (Exception e) {
-                    System.out.println("Error in onSucceeded: " + e.getMessage());
+                    System.out.println("Error in onSucceeded:" + e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -8499,9 +8453,9 @@ public class LauncherUI extends Application {
                 if (ex instanceof CrashAnalyzer.CrashException) {
                     CrashAnalyzer.CrashException crash = (CrashAnalyzer.CrashException) ex;
                     showCrashDialog(crash);
-                    statusLabel.setText("❌ Minecraft crasheó: " + crash.getCrashInfo().title);
+                    statusLabel.setText("❌ Minecraft crashed:" + crash.getCrashInfo().title);
                 } else {
-                    statusLabel.setText("❌ Error: " + ex.getMessage());
+                    statusLabel.setText("❌ Error:" + ex.getMessage());
                     ex.printStackTrace();
                 }
             }
@@ -8511,7 +8465,7 @@ public class LauncherUI extends Application {
             @Override
             public void handle(WorkerStateEvent event) {
                 System.out.println("Task was CANCELLED");
-                statusLabel.setText("Carga cancelada");
+                statusLabel.setText("Load canceled");
                 progressBar.setVisible(false);
             }
         });
@@ -8525,14 +8479,14 @@ public class LauncherUI extends Application {
         final VersionEntry entry = versionBox.getValue();
 
         if (entry == null) {
-            statusLabel.setText("⚠️ Selecciona una versión para reparar.");
+            statusLabel.setText("⚠️ Select a version to repair.");
             return;
         }
 
         repairBtn.setDisable(true);
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
-        statusLabel.setText("Reparando instalación de " + entry.id + "...");
+        statusLabel.setText("Repairing installation of" + entry.id + "...");
 
         final Task<Void> task = new Task<Void>() {
             @Override
@@ -8547,7 +8501,7 @@ public class LauncherUI extends Application {
             public void handle(WorkerStateEvent event) {
                 repairBtn.setDisable(false);
                 progressBar.setVisible(false);
-                statusLabel.setText("✅ Instalación reparada: " + entry.id);
+                statusLabel.setText("✅ Repaired installation:" + entry.id);
             }
         });
 
@@ -8560,10 +8514,10 @@ public class LauncherUI extends Application {
                 Throwable ex = task.getException();
 
                 if (ex != null) {
-                    statusLabel.setText("❌ Error reparando: " + ex.getMessage());
+                    statusLabel.setText("❌ Error repairing:" + ex.getMessage());
                     ex.printStackTrace();
                 } else {
-                    statusLabel.setText("❌ Error reparando instalación.");
+                    statusLabel.setText("❌ Error repairing installation.");
                 }
             }
         });
@@ -8579,7 +8533,7 @@ public class LauncherUI extends Application {
         final int ram = (int) ramSlider.getValue();
 
         if (entry == null || username.isEmpty()) {
-            statusLabel.setText("⚠️ Por favor, pon tu nombre y elige una versión.");
+            statusLabel.setText("⚠️ Please enter your name and choose a version.");
             return;
         }
 
@@ -8592,7 +8546,7 @@ public class LauncherUI extends Application {
         try {
             saveSelectedInstance();
         } catch (Exception ex) {
-            System.err.println("[Instance] No se pudo guardar instancia antes de jugar: " + ex.getMessage());
+            System.err.println("[Instance] Failed to save instance before playing:" + ex.getMessage());
         }
 
         final File gameDir = getCurrentInstanceGameDir();
@@ -8614,13 +8568,13 @@ public class LauncherUI extends Application {
 
         writeInstanceLaunchLog(entry.id, username, ram, gameDir);
 
-        System.out.println("[LAUNCHER-DEBUG] Preparando lanzamiento:");
-        System.out.println("[LAUNCHER-DEBUG] Versión: " + entry.id);
-        System.out.println("[LAUNCHER-DEBUG] Usuario: " + username);
-        System.out.println("[LAUNCHER-DEBUG] RAM: " + ram + " GB");
-        System.out.println("[LAUNCHER-DEBUG] GameDir instancia: " + gameDir.getAbsolutePath());
+        System.out.println("[LAUNCHER-DEBUG] Preparing launch:");
+        System.out.println("[LAUNCHER-DEBUG] Version:" + entry.id);
+        System.out.println("[LAUNCHER-DEBUG] User:" + username);
+        System.out.println("[LAUNCHER-DEBUG] RAM:" + ram + "GB");
+        System.out.println("[LAUNCHER-DEBUG] GameDir instance:" + gameDir.getAbsolutePath());
 
-        statusLabel.setText("Preparando juego...");
+        statusLabel.setText("Preparing game...");
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -8633,8 +8587,7 @@ public class LauncherUI extends Application {
                         ram,
                         gameDir,
                         getCurrentCustomClientJar(),
-                        getCurrentJvmArgs()
-                );
+                        getCurrentJvmArgs());
                 return null;
             }
         };
@@ -8642,12 +8595,12 @@ public class LauncherUI extends Application {
         task.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
             @Override
             public void handle(WorkerStateEvent event) {
-                statusLabel.setText("✅ Juego en ejecución.");
-                showToast("Juego en ejecución", "success");
+                statusLabel.setText("✅ Game running.");
+                showToast("Game running", "success");
                 progressBar.setVisible(false);
 
                 if (dashboardGameStatusLabel != null) {
-                    dashboardGameStatusLabel.setText("En ejecución");
+                    dashboardGameStatusLabel.setText("Running");
                 }
 
                 Instance instance = getCurrentInstance();
@@ -8684,12 +8637,12 @@ public class LauncherUI extends Application {
                 if (ex instanceof CrashAnalyzer.CrashException) {
                     CrashAnalyzer.CrashException crash = (CrashAnalyzer.CrashException) ex;
                     showCrashDialog(crash);
-                    statusLabel.setText("❌ Minecraft crasheó: " + crash.getCrashInfo().title);
-                    showToast("Minecraft Crasheo", "error");
+                    statusLabel.setText("❌ Minecraft crashed:" + crash.getCrashInfo().title);
+                    showToast("Minecraft Crashing", "error");
                 } else {
-                    String msg = ex == null || ex.getMessage() == null ? "Error desconocido" : ex.getMessage();
-                    statusLabel.setText("❌ Error iniciando Minecraft: " + msg);
-                    showToast("Error iniciando Minecraft", "error");
+                    String msg = ex == null || ex.getMessage() == null ? "Unknown error" : ex.getMessage();
+                    statusLabel.setText("❌ Error starting Minecraft:" + msg);
+                    showToast("Error starting Minecraft", "error");
 
                     if (ex != null) {
                         ex.printStackTrace();
@@ -8817,7 +8770,7 @@ public class LauncherUI extends Application {
                 } catch (Exception ignored) {
                 }
 
-                throw new Exception("HTTP " + code + " al descargar desde CurseForge. " + body);
+                throw new Exception("HTTP" + code + "when downloading from CurseForge." + body);
             }
 
             in = conn.getInputStream();
@@ -8844,23 +8797,21 @@ public class LauncherUI extends Application {
         }
 
         if (!targetFile.exists() || targetFile.length() == 0) {
-            throw new Exception("La descarga quedó vacía.");
+            throw new Exception("The download was empty.");
         }
     }
-
-
 
     private void exportCurrentInstanceToZip() {
         Instance instance = getCurrentInstance();
 
         if (instance == null) {
-            statusLabel.setText("No hay instancia seleccionada para exportar.");
+            statusLabel.setText("There is no instance selected for export.");
             return;
         }
 
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Exportar instancia");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Archivo ZIP", "*.zip"));
+        chooser.setTitle("Export instance");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("ZIP file", "*.zip"));
         chooser.setInitialFileName(InstanceManager.safeName(instance.name) + ".zip");
 
         File selected = chooser.showSaveDialog(null);
@@ -8876,7 +8827,7 @@ public class LauncherUI extends Application {
         final File targetZip = selected;
         final Instance selectedInstance = instance;
 
-        statusLabel.setText("Exportando instancia " + selectedInstance.name + "...");
+        statusLabel.setText("Exporting instance" + selectedInstance.name + "...");
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -8893,7 +8844,7 @@ public class LauncherUI extends Application {
             @Override
             public void handle(WorkerStateEvent event) {
                 progressBar.setVisible(false);
-                statusLabel.setText("✅ Instancia exportada: " + targetZip.getName());
+                statusLabel.setText("✅ Exported instance:" + targetZip.getName());
             }
         });
 
@@ -8905,10 +8856,10 @@ public class LauncherUI extends Application {
                 Throwable ex = task.getException();
 
                 if (ex != null) {
-                    statusLabel.setText("❌ Error exportando instancia: " + ex.getMessage());
+                    statusLabel.setText("❌ Error exporting instance:" + ex.getMessage());
                     ex.printStackTrace();
                 } else {
-                    statusLabel.setText("❌ Error exportando instancia.");
+                    statusLabel.setText("❌ Error exporting instance.");
                 }
             }
         });
@@ -8920,8 +8871,8 @@ public class LauncherUI extends Application {
 
     private void importInstanceFromZip() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Importar instancia");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Archivo ZIP", "*.zip"));
+        chooser.setTitle("Import instance");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("ZIP file", "*.zip"));
 
         File selected = chooser.showOpenDialog(null);
 
@@ -8931,7 +8882,7 @@ public class LauncherUI extends Application {
 
         final File zipFile = selected;
 
-        statusLabel.setText("Importando instancia...");
+        statusLabel.setText("Importing instance...");
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -8955,7 +8906,7 @@ public class LauncherUI extends Application {
 
                 prefs.put("lastInstanceName", imported.name);
 
-                statusLabel.setText("✅ Instancia importada: " + imported.name);
+                statusLabel.setText("✅ Imported instance:" + imported.name);
             }
         });
 
@@ -8967,10 +8918,10 @@ public class LauncherUI extends Application {
                 Throwable ex = task.getException();
 
                 if (ex != null) {
-                    statusLabel.setText("❌ Error importando instancia: " + ex.getMessage());
+                    statusLabel.setText("❌ Error importing instance:" + ex.getMessage());
                     ex.printStackTrace();
                 } else {
-                    statusLabel.setText("❌ Error importando instancia.");
+                    statusLabel.setText("❌ Error importing instance.");
                 }
             }
         });
@@ -8982,17 +8933,17 @@ public class LauncherUI extends Application {
 
     private boolean showPreLaunchIssuesDialog(final List<PreLaunchChecker.PreLaunchIssue> issues, boolean hasError) {
         final Dialog<Boolean> dialog = new Dialog<Boolean>();
-        dialog.setTitle("Comprobación antes de jugar");
+        dialog.setTitle("Checking before playing");
 
         if (hasError) {
-            dialog.setHeaderText("Se detectaron problemas importantes.");
+            dialog.setHeaderText("Major problems were detected.");
         } else {
-            dialog.setHeaderText("Se detectaron posibles advertencias.");
+            dialog.setHeaderText("Possible warnings were detected.");
         }
 
-        ButtonType repairButton = new ButtonType("Reparar automáticamente", ButtonBar.ButtonData.APPLY);
-        ButtonType launchAnywayButton = new ButtonType("Jugar igualmente", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButton = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType repairButton = new ButtonType("Repair automatically", ButtonBar.ButtonData.APPLY);
+        ButtonType launchAnywayButton = new ButtonType("Play also", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         dialog.getDialogPane().getButtonTypes().addAll(repairButton, launchAnywayButton, cancelButton);
 
@@ -9003,9 +8954,8 @@ public class LauncherUI extends Application {
 
         Label intro = new Label(
                 hasError
-                        ? "El launcher encontró problemas que pueden impedir que Minecraft inicie correctamente."
-                        : "El launcher encontró advertencias que podrían causar problemas."
-        );
+                        ? "The launcher encountered issues that may prevent Minecraft from starting correctly."
+                        : "The launcher encountered warnings that could cause problems.");
         intro.setWrapText(true);
         intro.setStyle("-fx-text-fill: #374151; -fx-font-size: 13px;");
 
@@ -9037,7 +8987,7 @@ public class LauncherUI extends Application {
                 desc.setMaxWidth(610);
                 desc.setStyle("-fx-font-size: 12px; -fx-text-fill: #374151;");
 
-                Label solution = new Label("Solución: " + issue.solution);
+                Label solution = new Label("Solution:" + issue.solution);
                 solution.setWrapText(true);
                 solution.setMaxWidth(610);
                 solution.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
@@ -9054,13 +9004,12 @@ public class LauncherUI extends Application {
         issuesScroll.setMinHeight(220);
         issuesScroll.getStyleClass().add("prelaunch-scroll");
 
-        Label countLabel = new Label("Problemas detectados: " + (issues == null ? 0 : issues.size()));
+        Label countLabel = new Label("Problems detected:" + (issues == null ? 0 : issues.size()));
         countLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: 800; -fx-text-fill: #6b7280;");
 
         Label repairHint = new Label(
-                "La reparación automática puede instalar mods requeridos como Fabric API, Sodium o Iris. " +
-                        "Para duplicados o mods de versión incorrecta, abrirá el gestor de Mods para revisión manual."
-        );
+                "Automatic repair can install required mods such as Fabric API, Sodium or Iris." +
+                        "For duplicates or incorrect version mods, it will open the Mod manager for manual review.");
         repairHint.setWrapText(true);
         repairHint.setMaxWidth(640);
         repairHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
@@ -9101,11 +9050,11 @@ public class LauncherUI extends Application {
 
     private void attemptAutoFixPreLaunchIssues(final List<PreLaunchChecker.PreLaunchIssue> issues) {
         if (issues == null || issues.isEmpty()) {
-            statusLabel.setText("No hay problemas que reparar.");
+            statusLabel.setText("There are no problems to repair.");
             return;
         }
 
-        statusLabel.setText("Reparando problemas detectados...");
+        statusLabel.setText("Repairing detected problems...");
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -9129,7 +9078,7 @@ public class LauncherUI extends Application {
                         installRequiredModrinthModForCurrentInstance("iris", "Iris Shaders");
                     } else if (title.contains("duplicate mods")) {
                         openedModsPanelNeeded = true;
-                    } else if (title.contains("version mismatch")) {
+                    } else if (title.contains("sametch version")) {
                         openedModsPanelNeeded = true;
                     }
                 }
@@ -9154,7 +9103,7 @@ public class LauncherUI extends Application {
             public void handle(WorkerStateEvent event) {
                 progressBar.setVisible(false);
                 progressBar.setProgress(0);
-                statusLabel.setText("✅ Reparación automática terminada. Pulsa Jugar otra vez para comprobar.");
+                statusLabel.setText("✅ Automatic repair completed. Press Play again to check.");
             }
         });
 
@@ -9167,10 +9116,10 @@ public class LauncherUI extends Application {
                 Throwable ex = task.getException();
 
                 if (ex != null) {
-                    statusLabel.setText("❌ Error en reparación automática: " + ex.getMessage());
+                    statusLabel.setText("❌ Error in automatic repair:" + ex.getMessage());
                     ex.printStackTrace();
                 } else {
-                    statusLabel.setText("❌ Error en reparación automática.");
+                    statusLabel.setText("❌ Error in automatic repair.");
                 }
             }
         });
@@ -9182,7 +9131,7 @@ public class LauncherUI extends Application {
 
     private void showWorldManagerDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Gestor de mundos");
+        dialog.setTitle("World Manager");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -9191,10 +9140,10 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Mundos");
+        Label title = new Label("Worlds");
         title.setStyle("-fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label subtitle = new Label("Gestiona los mundos de la instancia actual.");
+        Label subtitle = new Label("Manages the worlds of the current instance.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
         subtitle.setWrapText(true);
 
@@ -9207,17 +9156,17 @@ public class LauncherUI extends Application {
         HBox actions = new HBox(10);
         actions.setAlignment(Pos.CENTER_LEFT);
 
-        Button refreshBtn = new Button("Actualizar");
+        Button refreshBtn = new Button("Update");
         refreshBtn.getStyleClass().add("secondary-button");
 
-        Button openSavesBtn = new Button("Abrir saves");
+        Button openSavesBtn = new Button("Open saves");
         openSavesBtn.getStyleClass().add("secondary-button");
 
-        Button backupBtn = new Button("Crear backup");
+        Button backupBtn = new Button("Create backup");
         backupBtn.getStyleClass().add("button");
         backupBtn.setDisable(true);
 
-        Button deleteBtn = new Button("Eliminar");
+        Button deleteBtn = new Button("Delete");
         deleteBtn.getStyleClass().add("secondary-button");
         deleteBtn.setDisable(true);
 
@@ -9251,8 +9200,7 @@ public class LauncherUI extends Application {
                         name.setStyle("-fx-font-size: 15px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
                         Label meta = new Label(
-                                item.getName() + " · " + formatFileSize(getDirectorySize(item))
-                        );
+                                item.getName() + " · " + formatFileSize(getDirectorySize(item)));
                         meta.setStyle("-fx-font-size: 11px; -fx-text-fill: #6b7280;");
 
                         box.getChildren().addAll(name, meta);
@@ -9264,7 +9212,7 @@ public class LauncherUI extends Application {
             }
         });
 
-        final Label status = new Label("Cargando mundos...");
+        final Label status = new Label("Loading worlds...");
         status.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
 
         content.getChildren().addAll(actions, worldsList, status);
@@ -9303,11 +9251,11 @@ public class LauncherUI extends Application {
 
                 try {
                     File backup = backupWorld(selected);
-                    status.setText("Backup creado: " + backup.getName());
-                    showToast("Backup creado: " + backup.getName(), "success");
+                    status.setText("Backup created:" + backup.getName());
+                    showToast("Backup created:" + backup.getName(), "success");
                 } catch (Exception ex) {
-                    status.setText("Error creando backup: " + ex.getMessage());
-                    showToast("Error creando backup", "error");
+                    status.setText("Error creating backup:" + ex.getMessage());
+                    showToast("Error creating backup", "error");
                 }
             }
         });
@@ -9322,8 +9270,8 @@ public class LauncherUI extends Application {
                 }
 
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-                confirm.setTitle("Eliminar mundo");
-                confirm.setHeaderText("¿Eliminar este mundo?");
+                confirm.setTitle("Delete world");
+                confirm.setHeaderText("Eliminate this world?");
                 confirm.setContentText(getWorldDisplayName(selected));
 
                 java.util.Optional<ButtonType> result = confirm.showAndWait();
@@ -9331,7 +9279,7 @@ public class LauncherUI extends Application {
                 if (result.isPresent() && result.get() == ButtonType.OK) {
                     deleteDirectory(selected);
                     refreshWorldsList(worldsList, status);
-                    showToast("Mundo eliminado", "info");
+                    showToast("Deleted world", "info");
                 }
             }
         });
@@ -9377,7 +9325,7 @@ public class LauncherUI extends Application {
         });
 
         if (worlds == null || worlds.length == 0) {
-            status.setText("No hay mundos en esta instancia.");
+            status.setText("There are no worlds in this instance.");
             return;
         }
 
@@ -9392,12 +9340,12 @@ public class LauncherUI extends Application {
             list.getItems().add(world);
         }
 
-        status.setText("Mundos encontrados: " + worlds.length);
+        status.setText("Worlds found:" + worlds.length);
     }
 
     private String getWorldDisplayName(File worldDir) {
         if (worldDir == null) {
-            return "Mundo";
+            return "World";
         }
 
         return worldDir.getName();
@@ -9405,7 +9353,7 @@ public class LauncherUI extends Application {
 
     private File backupWorld(File worldDir) throws Exception {
         if (worldDir == null || !worldDir.exists()) {
-            throw new Exception("Mundo no válido.");
+            throw new Exception("Invalid world.");
         }
 
         File backupsDir = new File(getCurrentInstanceGameDir(), "backups");
@@ -9506,11 +9454,11 @@ public class LauncherUI extends Application {
         }
 
         if (hasActiveModInCurrentInstance(slug)) {
-            System.out.println("[AutoFix] " + displayName + " ya está instalado.");
+            System.out.println("[AutoFix]" + displayName + "it is already installed.");
             return;
         }
 
-        final String installingText = "Instalando " + displayName + "...";
+        final String installingText = "Installing" + displayName + "...";
 
         Platform.runLater(new Runnable() {
             @Override
@@ -9522,14 +9470,13 @@ public class LauncherUI extends Application {
         String mcVersion = getCurrentMinecraftVersionForMods();
 
         if (mcVersion == null || mcVersion.trim().isEmpty()) {
-            throw new Exception("No se pudo detectar la versión de Minecraft actual.");
+            throw new Exception("The current Minecraft version could not be detected.");
         }
 
         ModrinthClient.ModVersionFile fileData = ModrinthClient.getLatestVersionFile(
                 slug,
                 mcVersion,
-                "mod"
-        );
+                "mod");
 
         File modsDir = getModsDirectory();
         modsDir.mkdirs();
@@ -9537,7 +9484,7 @@ public class LauncherUI extends Application {
         File target = new File(modsDir, safeModFileName(fileData.filename));
 
         if (target.exists() && target.length() > 0) {
-            System.out.println("[AutoFix] Ya existe archivo: " + target.getName());
+            System.out.println("[AutoFix] File already exists:" + target.getName());
             return;
         }
 
@@ -9546,15 +9493,14 @@ public class LauncherUI extends Application {
         ModrinthClient.ModResult marker = new ModrinthClient.ModResult(
                 slug,
                 displayName,
-                "Instalado automáticamente por reparación previa al lanzamiento.",
+                "Automatically installed by pre-release repair.",
                 slug,
-                "mod"
-        );
+                "mod");
 
         markContentInstalled(slug, "mod", displayName, target);
         markLogicalContentInstalled(marker, target);
 
-        System.out.println("[AutoFix] Instalado: " + target.getName());
+        System.out.println("[AutoFix] Installed:" + target.getName());
     }
 
     private VBox createDashboardStatCard(String title, String value) {
@@ -9634,7 +9580,7 @@ public class LauncherUI extends Application {
 
     private void showFabricLoaderSelectionDialog(final VersionEntry version, final Button fabricBtn) {
         final Stage dialog = new Stage();
-        dialog.setTitle("Instalar Fabric");
+        dialog.setTitle("Install Fabric");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -9643,10 +9589,10 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Instalar Fabric");
+        Label title = new Label("Install Fabric");
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label subtitle = new Label("Elige la versión de Fabric Loader para " + version.id + ".");
+        Label subtitle = new Label("Choose the version of Fabric Loader for" + version.id + ".");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
         subtitle.setWrapText(true);
 
@@ -9657,9 +9603,9 @@ public class LauncherUI extends Application {
 
         final ComboBox<FabricManager.FabricLoaderVersion> loaderBox = new ComboBox<FabricManager.FabricLoaderVersion>();
         loaderBox.setMaxWidth(Double.MAX_VALUE);
-        loaderBox.setPromptText("Cargando loaders...");
+        loaderBox.setPromptText("Loading loaders...");
 
-        final Label status = new Label("Cargando versiones de Fabric Loader...");
+        final Label status = new Label("Loading Fabric Loader versions...");
         status.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
         ProgressBar bar = new ProgressBar(-1);
@@ -9668,11 +9614,11 @@ public class LauncherUI extends Application {
         HBox buttons = new HBox(10);
         buttons.setAlignment(Pos.CENTER_RIGHT);
 
-        Button installBtn = new Button("Instalar");
+        Button installBtn = new Button("Install");
         installBtn.getStyleClass().add("button");
         installBtn.setDisable(true);
 
-        Button cancelBtn = new Button("Cancelar");
+        Button cancelBtn = new Button("Cancel");
         cancelBtn.getStyleClass().add("secondary-button");
 
         buttons.getChildren().addAll(cancelBtn, installBtn);
@@ -9706,9 +9652,9 @@ public class LauncherUI extends Application {
                             if (!loaders.isEmpty()) {
                                 loaderBox.getSelectionModel().selectFirst();
                                 installBtn.setDisable(false);
-                                status.setText("Selecciona un loader. Recomendado: el primero estable.");
+                                status.setText("Select a loader. Recommended: the first stable.");
                             } else {
-                                status.setText("No se encontraron loaders para esta versión.");
+                                status.setText("No loaders were found for this version.");
                             }
 
                             bar.setVisible(false);
@@ -9718,7 +9664,7 @@ public class LauncherUI extends Application {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            status.setText("Error cargando loaders: " + ex.getMessage());
+                            status.setText("Error loading loaders:" + ex.getMessage());
                             bar.setVisible(false);
                         }
                     });
@@ -9742,7 +9688,7 @@ public class LauncherUI extends Application {
                 FabricManager.FabricLoaderVersion selected = loaderBox.getValue();
 
                 if (selected == null) {
-                    status.setText("Selecciona un loader.");
+                    status.setText("Select a loader.");
                     return;
                 }
 
@@ -9755,7 +9701,7 @@ public class LauncherUI extends Application {
 
     private void showScreenshotsDialog() {
         final Stage dialog = new Stage();
-        dialog.setTitle("Capturas");
+        dialog.setTitle("Captures");
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         BorderPane root = new BorderPane();
@@ -9764,10 +9710,10 @@ public class LauncherUI extends Application {
         VBox header = new VBox(6);
         header.setPadding(new Insets(22, 24, 14, 24));
 
-        Label title = new Label("Capturas");
+        Label title = new Label("Captures");
         title.setStyle("-fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: #111827;");
 
-        Label subtitle = new Label("Capturas de pantalla de la instancia actual.");
+        Label subtitle = new Label("Screenshots of the current instance.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
 
         header.getChildren().addAll(title, subtitle);
@@ -9779,13 +9725,13 @@ public class LauncherUI extends Application {
         HBox actions = new HBox(10);
         actions.setAlignment(Pos.CENTER_LEFT);
 
-        Button refreshBtn = new Button("Actualizar");
+        Button refreshBtn = new Button("Update");
         refreshBtn.getStyleClass().add("secondary-button");
 
-        Button openFolderBtn = new Button("Abrir carpeta");
+        Button openFolderBtn = new Button("Open folder");
         openFolderBtn.getStyleClass().add("secondary-button");
 
-        Button deleteBtn = new Button("Eliminar");
+        Button deleteBtn = new Button("Delete");
         deleteBtn.getStyleClass().add("secondary-button");
         deleteBtn.setDisable(true);
 
@@ -9840,7 +9786,7 @@ public class LauncherUI extends Application {
             }
         });
 
-        final Label status = new Label("Cargando capturas...");
+        final Label status = new Label("Loading screenshots...");
         status.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
 
         content.getChildren().addAll(actions, screenshotsList, status);
@@ -9889,7 +9835,7 @@ public class LauncherUI extends Application {
                 }
 
                 if (selected.delete()) {
-                    showToast("Captura eliminada", "info");
+                    showToast("Capture deleted", "info");
                 }
 
                 refreshScreenshotsList(screenshotsList, status);
@@ -9938,7 +9884,7 @@ public class LauncherUI extends Application {
         });
 
         if (files == null || files.length == 0) {
-            status.setText("No hay capturas en esta instancia.");
+            status.setText("There are no captures in this instance.");
             return;
         }
 
@@ -9953,7 +9899,7 @@ public class LauncherUI extends Application {
             list.getItems().add(file);
         }
 
-        status.setText("Capturas encontradas: " + files.length);
+        status.setText("Captures found:" + files.length);
     }
 
     private void openFile(File file) {
@@ -9962,7 +9908,7 @@ public class LauncherUI extends Application {
                 Desktop.getDesktop().open(file);
             }
         } catch (Exception ex) {
-            statusLabel.setText("No se pudo abrir archivo: " + ex.getMessage());
+            statusLabel.setText("Could not open file:" + ex.getMessage());
         }
     }
 
@@ -9984,41 +9930,39 @@ public class LauncherUI extends Application {
         }
 
         if (dashboardGameStatusLabel != null) {
-            dashboardGameStatusLabel.setText("Listo");
+            dashboardGameStatusLabel.setText("Ready");
         }
     }
 
     private String formatLastPlayed(long millis) {
         if (millis <= 0) {
-            return "Nunca";
+            return "Never";
         }
 
         try {
             java.time.Instant instant = java.time.Instant.ofEpochMilli(millis);
             java.time.LocalDateTime date = java.time.LocalDateTime.ofInstant(
                     instant,
-                    java.time.ZoneId.systemDefault()
-            );
+                    java.time.ZoneId.systemDefault());
 
             java.time.LocalDate today = java.time.LocalDate.now();
             java.time.LocalDate playedDate = date.toLocalDate();
 
             if (playedDate.equals(today)) {
-                return "Hoy " + String.format("%02d:%02d", date.getHour(), date.getMinute());
+                return "Today" + String.format("%02d:%02d", date.getHour(), date.getMinute());
             }
 
             if (playedDate.equals(today.minusDays(1))) {
-                return "Ayer " + String.format("%02d:%02d", date.getHour(), date.getMinute());
+                return "Yesterday" + String.format("%02d:%02d", date.getHour(), date.getMinute());
             }
 
             return String.format(
                     "%02d/%02d/%04d",
                     playedDate.getDayOfMonth(),
                     playedDate.getMonthValue(),
-                    playedDate.getYear()
-            );
+                    playedDate.getYear());
         } catch (Exception ex) {
-            return "Desconocido";
+            return "Unknown";
         }
     }
 
@@ -10030,7 +9974,7 @@ public class LauncherUI extends Application {
         long minutes = seconds / 60;
 
         if (minutes < 60) {
-            return minutes + " min";
+            return minutes + "min";
         }
 
         long hours = minutes / 60;
@@ -10040,7 +9984,7 @@ public class LauncherUI extends Application {
             return hours + " h";
         }
 
-        return hours + " h " + remainingMinutes + " min";
+        return hours + "h" + remainingMinutes + "min";
     }
 
     private String getContentStatsForInstance(Instance instance) {
@@ -10050,7 +9994,7 @@ public class LauncherUI extends Application {
         int shaders = countFiles(new File(gameDir, "shaderpacks"), ".zip");
         int resourcepacks = countFiles(new File(gameDir, "resourcepacks"), ".zip");
 
-        return mods + " mods · " + shaders + " shaders · " + resourcepacks + " texturas";
+        return mods + "mods ·" + shaders + "shaders ·" + resourcepacks + "textures";
     }
 
     private int countFiles(File dir, final String extension) {
@@ -10069,10 +10013,10 @@ public class LauncherUI extends Application {
     }
 
     private void installFabricWithLoader(final VersionEntry v,
-                                         final String loaderVersion,
-                                         final Button fabricBtn) {
+            final String loaderVersion,
+            final Button fabricBtn) {
         fabricBtn.setDisable(true);
-        statusLabel.setText("Instalando Fabric " + loaderVersion + " para " + v.id + "...");
+        statusLabel.setText("Installing Fabric" + loaderVersion + "for" + v.id + "...");
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -10092,7 +10036,7 @@ public class LauncherUI extends Application {
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        statusLabel.setText("✅ Fabric instalado con éxito: " + installedVersionId);
+                        statusLabel.setText("✅ Fabric installed successfully:" + installedVersionId);
                         fabricBtn.setDisable(false);
                         progressBar.setVisible(false);
                         loadVersions();
@@ -10105,7 +10049,7 @@ public class LauncherUI extends Application {
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        statusLabel.setText("❌ Error de Fabric: " + err);
+                        statusLabel.setText("❌ Fabric error:" + err);
                         fabricBtn.setDisable(false);
                         progressBar.setVisible(false);
                     }
@@ -10115,14 +10059,14 @@ public class LauncherUI extends Application {
     }
 
     private ModrinthClient.ModVersionFile showContentVersionSelectionDialog(final ModrinthClient.ModResult selected,
-                                                                            final ContentProviderOption provider,
-                                                                            final String mcVersion) throws Exception {
+            final ContentProviderOption provider,
+            final String mcVersion) throws Exception {
         final Dialog<ModrinthClient.ModVersionFile> dialog = new Dialog<ModrinthClient.ModVersionFile>();
-        dialog.setTitle("Seleccionar versión");
-        dialog.setHeaderText("Elige qué versión instalar de " + selected.title);
+        dialog.setTitle("Select version");
+        dialog.setHeaderText("Choose which version of" + selected.title);
 
-        ButtonType installButton = new ButtonType("Instalar", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButton = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType installButton = new ButtonType("Install", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         dialog.getDialogPane().getButtonTypes().addAll(installButton, cancelButton);
 
@@ -10132,9 +10076,9 @@ public class LauncherUI extends Application {
 
         final ComboBox<ModrinthClient.ModVersionFile> versionFileBox = new ComboBox<ModrinthClient.ModVersionFile>();
         versionFileBox.setMaxWidth(Double.MAX_VALUE);
-        versionFileBox.setPromptText("Cargando versiones...");
+        versionFileBox.setPromptText("Loading versions...");
 
-        final Label status = new Label("Cargando versiones disponibles...");
+        final Label status = new Label("Loading available versions...");
         status.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
         ProgressBar bar = new ProgressBar(-1);
@@ -10152,24 +10096,26 @@ public class LauncherUI extends Application {
         final Button installBtn = (Button) dialog.getDialogPane().lookupButton(installButton);
         installBtn.setDisable(true);
 
-        versionFileBox.setCellFactory(new javafx.util.Callback<ListView<ModrinthClient.ModVersionFile>, ListCell<ModrinthClient.ModVersionFile>>() {
-            @Override
-            public ListCell<ModrinthClient.ModVersionFile> call(ListView<ModrinthClient.ModVersionFile> listView) {
-                return new ListCell<ModrinthClient.ModVersionFile>() {
+        versionFileBox.setCellFactory(
+                new javafx.util.Callback<ListView<ModrinthClient.ModVersionFile>, ListCell<ModrinthClient.ModVersionFile>>() {
                     @Override
-                    protected void updateItem(ModrinthClient.ModVersionFile item, boolean empty) {
-                        super.updateItem(item, empty);
+                    public ListCell<ModrinthClient.ModVersionFile> call(
+                            ListView<ModrinthClient.ModVersionFile> listView) {
+                        return new ListCell<ModrinthClient.ModVersionFile>() {
+                            @Override
+                            protected void updateItem(ModrinthClient.ModVersionFile item, boolean empty) {
+                                super.updateItem(item, empty);
 
-                        if (empty || item == null) {
-                            setText(null);
-                            return;
-                        }
+                                if (empty || item == null) {
+                                    setText(null);
+                                    return;
+                                }
 
-                        setText(formatVersionFileLabel(item));
+                                setText(formatVersionFileLabel(item));
+                            }
+                        };
                     }
-                };
-            }
-        });
+                });
 
         versionFileBox.setButtonCell(new ListCell<ModrinthClient.ModVersionFile>() {
             @Override
@@ -10196,14 +10142,12 @@ public class LauncherUI extends Application {
                                 getCurseForgeApiKey(),
                                 selected.projectId,
                                 mcVersion,
-                                selected.projectType
-                        );
+                                selected.projectType);
                     } else {
                         files = ModrinthClient.getVersionFiles(
                                 selected.projectId,
                                 mcVersion,
-                                selected.projectType
-                        );
+                                selected.projectType);
                     }
 
                     Platform.runLater(new Runnable() {
@@ -10214,9 +10158,9 @@ public class LauncherUI extends Application {
                             if (!files.isEmpty()) {
                                 versionFileBox.getSelectionModel().selectFirst();
                                 installBtn.setDisable(false);
-                                status.setText("Versiones encontradas: " + files.size());
+                                status.setText("Versions found:" + files.size());
                             } else {
-                                status.setText("No se encontraron versiones compatibles.");
+                                status.setText("No compatible versions found.");
                             }
 
                             bar.setVisible(false);
@@ -10226,7 +10170,7 @@ public class LauncherUI extends Application {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            status.setText("Error cargando versiones: " + ex.getMessage());
+                            status.setText("Error loading versions:" + ex.getMessage());
                             bar.setVisible(false);
                         }
                     });
@@ -10271,7 +10215,7 @@ public class LauncherUI extends Application {
         }
 
         String versionName = file.versionId == null || file.versionId.trim().isEmpty()
-                ? "Versión"
+                ? "Version"
                 : file.versionId;
 
         return versionName + " · " + file.filename;
@@ -10309,8 +10253,8 @@ public class LauncherUI extends Application {
 
         toastContainer.getChildren().add(toast);
 
-        javafx.animation.PauseTransition delay =
-                new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3.5));
+        javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
+                javafx.util.Duration.seconds(3.5));
 
         delay.setOnFinished(new EventHandler<ActionEvent>() {
             @Override
@@ -10343,19 +10287,18 @@ public class LauncherUI extends Application {
         chooser.setTitle(title);
 
         chooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Java Archive", "*.jar")
-        );
+                new FileChooser.ExtensionFilter("JavaArchive", "*.jar"));
 
         return chooser.showOpenDialog(owner);
     }
 
     private File importCustomClientJarToInstance(Instance instance, File sourceJar) throws Exception {
         if (instance == null) {
-            throw new Exception("No hay instancia seleccionada.");
+            throw new Exception("There is no instance selected.");
         }
 
         if (sourceJar == null || !sourceJar.exists() || !sourceJar.isFile()) {
-            throw new Exception("El .jar seleccionado no existe.");
+            throw new Exception("The selected .jar does not exist.");
         }
 
         File clientDir = new File(InstanceManager.getGameDir(instance), "client");
@@ -10375,21 +10318,20 @@ public class LauncherUI extends Application {
         Files.copy(
                 sourceJar.toPath(),
                 target.toPath(),
-                StandardCopyOption.REPLACE_EXISTING
-        );
+                StandardCopyOption.REPLACE_EXISTING);
 
         return target;
     }
 
     private String getCustomClientLabel(Instance instance) {
         if (instance == null || instance.customClientJarPath == null || instance.customClientJarPath.trim().isEmpty()) {
-            return "No hay cliente personalizado asignado. Se usará el cliente normal de Minecraft.";
+            return "There is no custom client assigned. The normal Minecraft client will be used.";
         }
 
         File file = new File(instance.customClientJarPath);
 
         if (!file.exists()) {
-            return "Cliente personalizado configurado, pero el archivo no existe:\n" + instance.customClientJarPath;
+            return "Custom client configured, but file does not exist:\n" + instance.customClientJarPath;
         }
 
         return file.getName() + "\n" + file.getAbsolutePath();
@@ -10400,8 +10342,8 @@ public class LauncherUI extends Application {
             Instance instance = getCurrentInstance();
 
             if (instance == null) {
-                statusLabel.setText("No hay instancia seleccionada.");
-                showToast("No hay instancia seleccionada", "warning");
+                statusLabel.setText("There is no instance selected.");
+                showToast("No instance selected", "warning");
                 return;
             }
 
@@ -10409,21 +10351,21 @@ public class LauncherUI extends Application {
         } catch (Exception ex) {
             ex.printStackTrace();
 
-            String msg = ex.getMessage() == null ? "Error desconocido" : ex.getMessage();
+            String msg = ex.getMessage() == null ? "Unknown error" : ex.getMessage();
 
             if (statusLabel != null) {
-                statusLabel.setText("Error abriendo editor de instancia: " + msg);
+                statusLabel.setText("Error opening instance editor:" + msg);
             }
 
-            showToast("Error abriendo editor de instancia", "error");
+            showToast("Error opening instance editor", "error");
         }
     }
 
     private void installSelectedModpackVersion(final ModrinthClient.ModResult selected,
-                                               final ModrinthClient.ModVersionFile selectedVersionFile,
-                                               final Label status,
-                                               final ProgressBar progressBar) {
-        status.setText("Descargando modpack: " + selected.title + "...");
+            final ModrinthClient.ModVersionFile selectedVersionFile,
+            final Label status,
+            final ProgressBar progressBar) {
+        status.setText("Downloading modpack:" + selected.title + "...");
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -10444,13 +10386,11 @@ public class LauncherUI extends Application {
                             temp,
                             status,
                             progressBar,
-                            selected.title
-                    );
+                            selected.title);
 
                     final Instance imported = ModpackManager.importModpack(
                             temp,
-                            getCurseForgeApiKey()
-                    );
+                            getCurseForgeApiKey());
 
                     Platform.runLater(new Runnable() {
                         @Override
@@ -10463,8 +10403,8 @@ public class LauncherUI extends Application {
                             progressBar.setVisible(false);
                             progressBar.setProgress(0);
 
-                            status.setText("✅ Modpack importado como instancia: " + imported.name);
-                            showToast("Modpack importado: " + imported.name, "success");
+                            status.setText("✅ Modpack imported as instance:" + imported.name);
+                            showToast("Imported modpack:" + imported.name, "success");
                         }
                     });
                 } catch (final Exception ex) {
@@ -10474,8 +10414,8 @@ public class LauncherUI extends Application {
                             progressBar.setVisible(false);
                             progressBar.setProgress(0);
 
-                            status.setText("Error importando modpack: " + ex.getMessage());
-                            showToast("Error importando modpack", "error");
+                            status.setText("Error importing modpack:" + ex.getMessage());
+                            showToast("Error importing modpack", "error");
                             ex.printStackTrace();
                         }
                     });
@@ -10560,8 +10500,8 @@ public class LauncherUI extends Application {
             return;
         }
 
-        showToast("Importando modpack...", "info");
-        statusLabel.setText("Importando modpack: " + file.getName());
+        showToast("Importing modpack...", "info");
+        statusLabel.setText("Importing modpack:" + file.getName());
         progressBar.setVisible(true);
         progressBar.setProgress(-1);
 
@@ -10584,8 +10524,8 @@ public class LauncherUI extends Application {
                 selectInstance(instance);
                 loadVersions();
 
-                statusLabel.setText("✅ Modpack importado: " + instance.name);
-                showToast("Modpack importado: " + instance.name, "success");
+                statusLabel.setText("✅ Imported modpack:" + instance.name);
+                showToast("Imported modpack:" + instance.name, "success");
             }
         });
 
@@ -10596,10 +10536,10 @@ public class LauncherUI extends Application {
 
                 Throwable ex = task.getException();
 
-                String msg = ex == null || ex.getMessage() == null ? "Error desconocido" : ex.getMessage();
+                String msg = ex == null || ex.getMessage() == null ? "Unknown error" : ex.getMessage();
 
-                statusLabel.setText("❌ Error importando modpack: " + msg);
-                showToast("Error importando modpack", "error");
+                statusLabel.setText("❌ Error importing modpack:" + msg);
+                showToast("Error importing modpack", "error");
 
                 if (ex != null) {
                     ex.printStackTrace();
@@ -10636,11 +10576,11 @@ public class LauncherUI extends Application {
 
             try {
                 writer.println("=== Launch at " + java.time.LocalDateTime.now() + " ===");
-                writer.println("Instance: " + (getCurrentInstance() == null ? "Unknown" : getCurrentInstance().name));
-                writer.println("Version: " + version);
-                writer.println("Username: " + username);
-                writer.println("RAM: " + ram + " GB");
-                writer.println("GameDir: " + gameDir.getAbsolutePath());
+                writer.println("Instance:" + (getCurrentInstance() == null ? "Unknown" : getCurrentInstance().name));
+                writer.println("Version:" + version);
+                writer.println("Username:" + username);
+                writer.println("RAM:" + ram + "GB");
+                writer.println("GameDir:" + gameDir.getAbsolutePath());
                 writer.println();
             } finally {
                 writer.close();
@@ -10656,7 +10596,7 @@ public class LauncherUI extends Application {
         }
 
         String q = query == null ? "" : query.toLowerCase().trim();
-        String f = filter == null ? "Todas" : filter;
+        String f = filter == null ? "All" : filter;
 
         List<VersionEntry> filtered = new ArrayList<VersionEntry>();
 
@@ -10680,7 +10620,7 @@ public class LauncherUI extends Application {
                 continue;
             }
 
-            if ("Instaladas".equals(f) && !isVersionInstalled(id)) {
+            if ("Installed".equals(f) && !isVersionInstalled(id)) {
                 continue;
             }
 
@@ -10701,22 +10641,21 @@ public class LauncherUI extends Application {
 
         File json = new File(
                 VersionManager.MC_DIR,
-                "versions/" + versionId + "/" + versionId + ".json"
-        );
+                "versions/" + versionId + "/" + versionId + ".json");
 
         return json.exists();
     }
 
     private File installSelectedContentFile(ModrinthClient.ModResult selected,
-                                            ModrinthClient.ModVersionFile selectedFile,
-                                            Label statusLabel,
-                                            ProgressBar progressBar) throws Exception {
+            ModrinthClient.ModVersionFile selectedFile,
+            Label statusLabel,
+            ProgressBar progressBar) throws Exception {
         if (selected == null) {
-            throw new Exception("No hay contenido seleccionado.");
+            throw new Exception("There is no selected content.");
         }
 
         if (selectedFile == null) {
-            throw new Exception("No hay versión seleccionada.");
+            throw new Exception("There is no version selected.");
         }
 
         String type = selected.projectType == null || selected.projectType.trim().isEmpty()
@@ -10730,7 +10669,7 @@ public class LauncherUI extends Application {
                 return existing;
             }
 
-            throw new Exception("Este contenido o un equivalente ya está instalado.");
+            throw new Exception("This content or an equivalent is already installed.");
         }
 
         File targetDir = getContentDirectory(type);
@@ -10749,8 +10688,7 @@ public class LauncherUI extends Application {
                 targetFile,
                 statusLabel,
                 progressBar,
-                selected.title
-        );
+                selected.title);
 
         markContentInstalled(selected.projectId, type, selected.title, targetFile);
         markLogicalContentInstalled(selected, targetFile);
