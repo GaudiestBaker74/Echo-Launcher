@@ -14,6 +14,7 @@ public class Instance {
     public long totalPlayTimeSeconds;
 
     public String customClientJarPath;
+    public String jvmArgs;
 
     public Instance() {
     }
@@ -25,9 +26,10 @@ public class Instance {
         this.type = type;
         this.ram = ram;
         this.gameDirPath = gameDirPath;
-        this.icon = "grass";
+        this.icon = "🌱";
         this.notes = "";
         this.customClientJarPath = "";
+        this.jvmArgs = "";
     }
 
     @Override

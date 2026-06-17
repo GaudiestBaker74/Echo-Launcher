@@ -17,18 +17,22 @@ import java.util.concurrent.TimeUnit;
 public class MinecraftLauncher {
 
     public static void launch(String version, String user, int ram) throws Exception {
-        launchInternal(version, user, ram, VersionManager.MC_DIR, null);
+        launchInternal(version, user, ram, VersionManager.MC_DIR, null, "");
     }
 
     public static void launch(String version, String user, int ram, File gameDir) throws Exception {
-        launchInternal(version, user, ram, gameDir, null);
+        launchInternal(version, user, ram, gameDir, null, "");
     }
 
     public static void launch(String version, String user, int ram, File gameDir, File customClientJar) throws Exception {
-        launchInternal(version, user, ram, gameDir, customClientJar);
+        launchInternal(version, user, ram, gameDir, customClientJar, "");
     }
 
-    private static void launchInternal(String version, String user, int ram, File gameDir, File customClientJar) throws Exception {
+    public static void launch(String version, String user, int ram, File gameDir, File customClientJar, String extraJvmArgs) throws Exception {
+        launchInternal(version, user, ram, gameDir, customClientJar, extraJvmArgs);
+    }
+
+    private static void launchInternal(String version, String user, int ram, File gameDir, File customClientJar, String extraJvmArgs) throws Exception {
         if (gameDir == null) {
             gameDir = VersionManager.MC_DIR;
         }
@@ -70,8 +74,8 @@ public class MinecraftLauncher {
         cmd.add("-XX:InitiatingHeapOccupancyPercent=15");
         cmd.add("-XX:+AlwaysPreTouch");
         cmd.add("-XX:+ParallelRefProcEnabled");
-        cmd.add("-Dsun.rmi.dgc.server.gcInterval=2147483646");
         cmd.add("-Dsun.rmi.dgc.client.gcInterval=2147483646");
+        addExtraJvmArgs(cmd, extraJvmArgs);
         cmd.add("-Dfile.encoding=UTF-8");
         cmd.add("-Dsun.stdout.encoding=UTF-8");
         cmd.add("-Dsun.stderr.encoding=UTF-8");
@@ -530,6 +534,76 @@ public class MinecraftLauncher {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    private static void addExtraJvmArgs(List<String> cmd, String extraJvmArgs) {
+        if (extraJvmArgs == null || extraJvmArgs.trim().isEmpty()) {
+            return;
+        }
+
+        List<String> args = splitJvmArgs(extraJvmArgs);
+
+        for (String arg : args) {
+            if (arg == null || arg.trim().isEmpty()) {
+                continue;
+            }
+
+            /*
+             * Evitamos que el usuario duplique memoria desde aquí.
+             */
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms")) {
+                System.out.println("[JVM Args] Ignorado argumento de memoria duplicado: " + arg);
+                continue;
+            }
+
+            cmd.add(arg);
+            System.out.println("[JVM Args] Añadido: " + arg);
+        }
+    }
+
+    private static List<String> splitJvmArgs(String input) {
+        List<String> result = new ArrayList<String>();
+
+        if (input == null || input.trim().isEmpty()) {
+            return result;
+        }
+
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        char quoteChar = 0;
+
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+
+            if ((c == '"' || c == '\'') && (i == 0 || input.charAt(i - 1) != '\\')) {
+                if (inQuotes && c == quoteChar) {
+                    inQuotes = false;
+                    quoteChar = 0;
+                } else if (!inQuotes) {
+                    inQuotes = true;
+                    quoteChar = c;
+                } else {
+                    current.append(c);
+                }
+
+                continue;
+            }
+
+            if (Character.isWhitespace(c) && !inQuotes) {
+                if (current.length() > 0) {
+                    result.add(current.toString());
+                    current.setLength(0);
+                }
+            } else {
+                current.append(c);
+            }
+        }
+
+        if (current.length() > 0) {
+            result.add(current.toString());
+        }
+
+        return result;
     }
 
     private static void applyCustomClientJarToClasspath(List<File> cp,

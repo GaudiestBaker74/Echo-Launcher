@@ -37,6 +37,9 @@ import javafx.scene.transform.Scale;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.animation.AnimationTimer;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 
 import java.io.File;
 import java.net.URLEncoder;
@@ -128,6 +131,17 @@ public class SkinViewer3D {
             Rotate rotateY = new Rotate(28, Rotate.Y_AXIS);
             Scale scale = new Scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
 
+            final boolean[] autoRotate = new boolean[]{false};
+
+            AnimationTimer autoRotateTimer = new AnimationTimer() {
+                @Override
+                public void handle(long now) {
+                    if (autoRotate[0]) {
+                        rotateY.setAngle(rotateY.getAngle() + 0.35);
+                    }
+                }
+            };
+
             player.getTransforms().addAll(rotateX, rotateY, scale);
 
             Group world = new Group();
@@ -200,6 +214,36 @@ public class SkinViewer3D {
             Button closeBtn = new Button("Cerrar");
             closeBtn.getStyleClass().add("button");
 
+            CheckBox autoRotateBox = new CheckBox("Auto rotar");
+            autoRotateBox.setStyle("-fx-text-fill: #374151; -fx-font-weight: 700;");
+
+            ComboBox<String> backgroundBox = new ComboBox<String>();
+            backgroundBox.getItems().addAll("Claro", "Azul", "Oscuro");
+            backgroundBox.getSelectionModel().selectFirst();
+            backgroundBox.setPrefWidth(110);
+
+            autoRotateBox.setOnAction(event -> {
+                autoRotate[0] = autoRotateBox.isSelected();
+
+                if (autoRotate[0]) {
+                    autoRotateTimer.start();
+                } else {
+                    autoRotateTimer.stop();
+                }
+            });
+
+            backgroundBox.setOnAction(event -> {
+                String value = backgroundBox.getValue();
+
+                if ("Oscuro".equals(value)) {
+                    subScene.setFill(Color.web("#111827"));
+                } else if ("Azul".equals(value)) {
+                    subScene.setFill(Color.web("#eef2ff"));
+                } else {
+                    subScene.setFill(Color.web("#f6f8fb"));
+                }
+            });
+
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
 
@@ -213,7 +257,15 @@ public class SkinViewer3D {
             rightBtn.setOnAction(event -> rotateY.setAngle(rotateY.getAngle() + 35));
             closeBtn.setOnAction(event -> dialog.close());
 
-            footer.getChildren().addAll(resetBtn, leftBtn, rightBtn, spacer, closeBtn);
+            footer.getChildren().addAll(
+                    resetBtn,
+                    leftBtn,
+                    rightBtn,
+                    autoRotateBox,
+                    backgroundBox,
+                    spacer,
+                    closeBtn
+            );
 
             root.setTop(header);
             root.setCenter(centerWrap);

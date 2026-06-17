@@ -1043,6 +1043,12 @@ public class LauncherUI extends Application {
             Button topSkinsBtn = new Button("Skins");
             topSkinsBtn.getStyleClass().add("top-nav-button");
 
+            Button topWorldsBtn = new Button("Mundos");
+            topWorldsBtn.getStyleClass().add("top-nav-button");
+
+            Button topScreenshotsBtn = new Button("Capturas");
+            topScreenshotsBtn.getStyleClass().add("top-nav-button");
+
             Button topSettingsBtn = new Button("Ajustes");
             topSettingsBtn.getStyleClass().add("top-nav-button");
 
@@ -1081,6 +1087,20 @@ public class LauncherUI extends Application {
                 }
             });
 
+            topWorldsBtn.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    showWorldManagerDialog();
+                }
+            });
+
+            topScreenshotsBtn.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    showScreenshotsDialog();
+                }
+            });
+
             topBar.getChildren().addAll(
                     brandBox,
                     topSpacer,
@@ -1090,6 +1110,8 @@ public class LauncherUI extends Application {
                     topSearchBtn,
                     topGraphicsBtn,
                     topSkinsBtn,
+                    topWorldsBtn,
+                    topScreenshotsBtn,
                     topSettingsBtn
             );
 
@@ -1189,12 +1211,17 @@ public class LauncherUI extends Application {
             Region versionSpacer = new Region();
             HBox.setHgrow(versionSpacer, Priority.ALWAYS);
 
+            final ComboBox<String> versionFilterBox = new ComboBox<String>();
+            versionFilterBox.getItems().addAll("Todas", "Instaladas", "Fabric", "Vanilla");
+            versionFilterBox.getSelectionModel().selectFirst();
+            versionFilterBox.setPrefWidth(130);
+
             final TextField searchField = new TextField();
             searchField.setPromptText("Buscar versión...");
             searchField.setPrefWidth(180);
             searchField.getStyleClass().add("dashboard-search");
 
-            versionHead.getChildren().addAll(versionLabel, versionSpacer, searchField);
+            versionHead.getChildren().addAll(versionLabel, versionSpacer, versionFilterBox, searchField);
 
             HBox versionSelectBox = new HBox(10);
             versionSelectBox.setAlignment(Pos.CENTER_LEFT);
@@ -1325,23 +1352,15 @@ public class LauncherUI extends Application {
         stage.show();
 
         // Listeners for functionality
-        searchField.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> obs, String oldV, final String newV) {
-                if (allVersions == null)
-                    return;
-                List<VersionEntry> filtered = new ArrayList<VersionEntry>();
-                for (VersionEntry v : allVersions) {
-                    if (v.id.toLowerCase().contains(newV.toLowerCase())) {
-                        filtered.add(v);
-                    }
+            ChangeListener<Object> versionFilterListener = new ChangeListener<Object>() {
+                @Override
+                public void changed(ObservableValue<?> observable, Object oldValue, Object newValue) {
+                    applyVersionFilter(searchField.getText(), versionFilterBox.getValue());
                 }
-                versionBox.getItems().setAll(filtered);
-                if (!filtered.isEmpty()) {
-                    versionBox.getSelectionModel().selectFirst();
-                }
-            }
-        });
+            };
+
+            searchField.textProperty().addListener(versionFilterListener);
+            versionFilterBox.valueProperty().addListener(versionFilterListener);
 
             repairBtn.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
@@ -1604,6 +1623,18 @@ public class LauncherUI extends Application {
         final TextField nameField = new TextField(instance.name == null ? "" : instance.name);
         nameField.setPromptText("Nombre de la instancia");
 
+        final ComboBox<String> iconEditBox = new ComboBox<String>();
+        iconEditBox.getItems().addAll(
+                "🌱", "⚔", "✨", "⚙", "🧪", "🎮", "🔥", "💎", "🧱", "🧭", "🚀"
+        );
+        iconEditBox.setMaxWidth(Double.MAX_VALUE);
+
+        if (instance.icon != null && !instance.icon.trim().isEmpty()) {
+            iconEditBox.getSelectionModel().select(getInstanceIcon(instance));
+        } else {
+            iconEditBox.getSelectionModel().select("🌱");
+        }
+
         final TextField usernameEditField = new TextField(
                 instance.username == null || instance.username.trim().isEmpty()
                         ? usernameField.getText()
@@ -1647,6 +1678,8 @@ public class LauncherUI extends Application {
                 generalTitle,
                 new Label("Nombre"),
                 nameField,
+                new Label("Icono"),
+                iconEditBox,
                 new Label("Usuario"),
                 usernameEditField,
                 new Label("Versión"),
@@ -1804,7 +1837,28 @@ public class LauncherUI extends Application {
         javaHint.setWrapText(true);
         javaHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
 
-        javaCard.getChildren().addAll(javaTitle, ramHeader, ramEditSlider, javaHint);
+        Label jvmArgsTitle = new Label("Argumentos JVM avanzados");
+        jvmArgsTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: #111827;");
+
+        final TextArea jvmArgsArea = new TextArea(instance.jvmArgs == null ? "" : instance.jvmArgs);
+        jvmArgsArea.setPromptText("-XX:+UseG1GC -XX:MaxGCPauseMillis=50");
+        jvmArgsArea.setWrapText(true);
+        jvmArgsArea.setPrefHeight(80);
+        jvmArgsArea.getStyleClass().add("console-output");
+
+        Label jvmArgsHint = new Label("Opcional. Déjalo vacío si no sabes qué poner.");
+        jvmArgsHint.setWrapText(true);
+        jvmArgsHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #6b7280;");
+
+        javaCard.getChildren().addAll(
+                javaTitle,
+                ramHeader,
+                ramEditSlider,
+                javaHint,
+                jvmArgsTitle,
+                jvmArgsArea,
+                jvmArgsHint
+        );
 
         /*
          * NOTES
@@ -1865,6 +1919,11 @@ public class LauncherUI extends Application {
         openConfigBtn.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(openConfigBtn, Priority.ALWAYS);
 
+        Button openLogsBtn = new Button("Logs");
+        openLogsBtn.getStyleClass().add("secondary-button");
+        openLogsBtn.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(openLogsBtn, Priority.ALWAYS);
+
         folderRow1.getChildren().addAll(openRootBtn, openModsBtn, openResourcepacksBtn);
         folderRow2.getChildren().addAll(openShaderpacksBtn, openConfigBtn);
 
@@ -1872,6 +1931,15 @@ public class LauncherUI extends Application {
             @Override
             public void handle(ActionEvent event) {
                 openInstanceSubFolder(instance, "");
+            }
+        });
+
+        folderRow2.getChildren().addAll(openShaderpacksBtn, openConfigBtn, openLogsBtn);
+
+        openLogsBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                openInstanceSubFolder(instance, "logs");
             }
         });
 
@@ -1945,11 +2013,13 @@ public class LauncherUI extends Application {
 
                 try {
                     instance.name = newName;
+                    instance.icon = iconEditBox.getValue() == null ? "🌱" : iconEditBox.getValue();
                     instance.username = usernameEditField.getText() == null ? "" : usernameEditField.getText().trim();
                     instance.version = selectedVersion.id;
                     instance.type = detectProfileType(selectedVersion.id);
                     instance.ram = (int) ramEditSlider.getValue();
                     instance.notes = notesArea.getText() == null ? "" : notesArea.getText();
+                    instance.jvmArgs = jvmArgsArea.getText() == null ? "" : jvmArgsArea.getText().trim();
 
                     InstanceManager.ensureInstanceFolders(instance);
                     InstanceManager.saveInstance(instance);
@@ -2516,33 +2586,65 @@ public class LauncherUI extends Application {
     private void createNewInstance() {    showInstanceTemplateDialog();}
 
     private String getInstanceIcon(Instance instance) {
-        if (instance == null || instance.icon == null) {
+        if (instance == null || instance.icon == null || instance.icon.trim().isEmpty()) {
             return "🌱";
         }
 
-        String icon = instance.icon.toLowerCase();
+        String icon = instance.icon.trim();
 
-        if (icon.contains("sword") || icon.contains("pvp")) {
+        if (isKnownInstanceEmoji(icon)) {
+            return icon;
+        }
+
+        String lower = icon.toLowerCase();
+
+        if (lower.contains("sword") || lower.contains("pvp")) {
             return "⚔";
         }
 
-        if (icon.contains("shader") || icon.contains("star")) {
+        if (lower.contains("shader") || lower.contains("star")) {
             return "✨";
         }
 
-        if (icon.contains("tech") || icon.contains("gear")) {
+        if (lower.contains("tech") || lower.contains("gear")) {
             return "⚙";
         }
 
-        if (icon.contains("test") || icon.contains("lab")) {
+        if (lower.contains("test") || lower.contains("lab")) {
             return "🧪";
         }
 
-        if (icon.contains("grass")) {
+        if (lower.contains("fire")) {
+            return "🔥";
+        }
+
+        if (lower.contains("diamond")) {
+            return "💎";
+        }
+
+        if (lower.contains("brick")) {
+            return "🧱";
+        }
+
+        if (lower.contains("grass")) {
             return "🌱";
         }
 
         return "🎮";
+    }
+
+    private boolean isKnownInstanceEmoji(String icon) {
+        return "🌱".equals(icon)
+                || "⚔".equals(icon)
+                || "✨".equals(icon)
+                || "⚙".equals(icon)
+                || "🧪".equals(icon)
+                || "🎮".equals(icon)
+                || "🔥".equals(icon)
+                || "💎".equals(icon)
+                || "🧱".equals(icon)
+                || "🧭".equals(icon)
+                || "🚀".equals(icon);
     }
 
     private String getInstanceTypeLabel(Instance instance) {
@@ -8510,6 +8612,8 @@ public class LauncherUI extends Application {
             updateDashboardStats(launchInstance);
         }
 
+        writeInstanceLaunchLog(entry.id, username, ram, gameDir);
+
         System.out.println("[LAUNCHER-DEBUG] Preparando lanzamiento:");
         System.out.println("[LAUNCHER-DEBUG] Versión: " + entry.id);
         System.out.println("[LAUNCHER-DEBUG] Usuario: " + username);
@@ -8523,7 +8627,14 @@ public class LauncherUI extends Application {
         final Task<Void> task = new Task<Void>() {
             @Override
             protected Void call() throws Exception {
-                MinecraftLauncher.launch(entry.id, username, ram, gameDir, getCurrentCustomClientJar());
+                MinecraftLauncher.launch(
+                        entry.id,
+                        username,
+                        ram,
+                        gameDir,
+                        getCurrentCustomClientJar(),
+                        getCurrentJvmArgs()
+                );
                 return null;
             }
         };
@@ -9069,6 +9180,326 @@ public class LauncherUI extends Application {
         t.start();
     }
 
+    private void showWorldManagerDialog() {
+        final Stage dialog = new Stage();
+        dialog.setTitle("Gestor de mundos");
+        dialog.initModality(Modality.APPLICATION_MODAL);
+
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color: #f6f8fb;");
+
+        VBox header = new VBox(6);
+        header.setPadding(new Insets(22, 24, 14, 24));
+
+        Label title = new Label("Mundos");
+        title.setStyle("-fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: #111827;");
+
+        Label subtitle = new Label("Gestiona los mundos de la instancia actual.");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
+        subtitle.setWrapText(true);
+
+        header.getChildren().addAll(title, subtitle);
+
+        VBox content = new VBox(14);
+        content.setPadding(new Insets(0, 24, 20, 24));
+        content.setStyle("-fx-background-color: #f6f8fb;");
+
+        HBox actions = new HBox(10);
+        actions.setAlignment(Pos.CENTER_LEFT);
+
+        Button refreshBtn = new Button("Actualizar");
+        refreshBtn.getStyleClass().add("secondary-button");
+
+        Button openSavesBtn = new Button("Abrir saves");
+        openSavesBtn.getStyleClass().add("secondary-button");
+
+        Button backupBtn = new Button("Crear backup");
+        backupBtn.getStyleClass().add("button");
+        backupBtn.setDisable(true);
+
+        Button deleteBtn = new Button("Eliminar");
+        deleteBtn.getStyleClass().add("secondary-button");
+        deleteBtn.setDisable(true);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        actions.getChildren().addAll(refreshBtn, openSavesBtn, spacer, backupBtn, deleteBtn);
+
+        final ListView<File> worldsList = new ListView<File>();
+        worldsList.getStyleClass().add("list-view");
+        VBox.setVgrow(worldsList, Priority.ALWAYS);
+
+        worldsList.setCellFactory(new javafx.util.Callback<ListView<File>, ListCell<File>>() {
+            @Override
+            public ListCell<File> call(ListView<File> listView) {
+                return new ListCell<File>() {
+                    @Override
+                    protected void updateItem(File item, boolean empty) {
+                        super.updateItem(item, empty);
+
+                        if (empty || item == null) {
+                            setText(null);
+                            setGraphic(null);
+                            return;
+                        }
+
+                        VBox box = new VBox(5);
+                        box.setPadding(new Insets(10));
+
+                        Label name = new Label(getWorldDisplayName(item));
+                        name.setStyle("-fx-font-size: 15px; -fx-font-weight: 900; -fx-text-fill: #111827;");
+
+                        Label meta = new Label(
+                                item.getName() + " · " + formatFileSize(getDirectorySize(item))
+                        );
+                        meta.setStyle("-fx-font-size: 11px; -fx-text-fill: #6b7280;");
+
+                        box.getChildren().addAll(name, meta);
+
+                        setText(null);
+                        setGraphic(box);
+                    }
+                };
+            }
+        });
+
+        final Label status = new Label("Cargando mundos...");
+        status.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
+
+        content.getChildren().addAll(actions, worldsList, status);
+
+        worldsList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<File>() {
+            @Override
+            public void changed(ObservableValue<? extends File> observable, File oldValue, File newValue) {
+                boolean selected = newValue != null;
+                backupBtn.setDisable(!selected);
+                deleteBtn.setDisable(!selected);
+            }
+        });
+
+        refreshBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                refreshWorldsList(worldsList, status);
+            }
+        });
+
+        openSavesBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                openFolder(getSavesDir());
+            }
+        });
+
+        backupBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                File selected = worldsList.getSelectionModel().getSelectedItem();
+
+                if (selected == null) {
+                    return;
+                }
+
+                try {
+                    File backup = backupWorld(selected);
+                    status.setText("Backup creado: " + backup.getName());
+                    showToast("Backup creado: " + backup.getName(), "success");
+                } catch (Exception ex) {
+                    status.setText("Error creando backup: " + ex.getMessage());
+                    showToast("Error creando backup", "error");
+                }
+            }
+        });
+
+        deleteBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                File selected = worldsList.getSelectionModel().getSelectedItem();
+
+                if (selected == null) {
+                    return;
+                }
+
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Eliminar mundo");
+                confirm.setHeaderText("¿Eliminar este mundo?");
+                confirm.setContentText(getWorldDisplayName(selected));
+
+                java.util.Optional<ButtonType> result = confirm.showAndWait();
+
+                if (result.isPresent() && result.get() == ButtonType.OK) {
+                    deleteDirectory(selected);
+                    refreshWorldsList(worldsList, status);
+                    showToast("Mundo eliminado", "info");
+                }
+            }
+        });
+
+        root.setTop(header);
+        root.setCenter(content);
+
+        refreshWorldsList(worldsList, status);
+
+        Scene scene = new Scene(root, 760, 620);
+
+        try {
+            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        } catch (Exception ignored) {
+        }
+
+        dialog.setScene(scene);
+        dialog.setMinWidth(700);
+        dialog.setMinHeight(540);
+        dialog.show();
+    }
+
+    private File getSavesDir() {
+        File dir = new File(getCurrentInstanceGameDir(), "saves");
+
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        return dir;
+    }
+
+    private void refreshWorldsList(ListView<File> list, Label status) {
+        File savesDir = getSavesDir();
+
+        list.getItems().clear();
+
+        File[] worlds = savesDir.listFiles(new java.io.FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                return file.isDirectory() && new File(file, "level.dat").exists();
+            }
+        });
+
+        if (worlds == null || worlds.length == 0) {
+            status.setText("No hay mundos en esta instancia.");
+            return;
+        }
+
+        java.util.Arrays.sort(worlds, new java.util.Comparator<File>() {
+            @Override
+            public int compare(File a, File b) {
+                return a.getName().compareToIgnoreCase(b.getName());
+            }
+        });
+
+        for (File world : worlds) {
+            list.getItems().add(world);
+        }
+
+        status.setText("Mundos encontrados: " + worlds.length);
+    }
+
+    private String getWorldDisplayName(File worldDir) {
+        if (worldDir == null) {
+            return "Mundo";
+        }
+
+        return worldDir.getName();
+    }
+
+    private File backupWorld(File worldDir) throws Exception {
+        if (worldDir == null || !worldDir.exists()) {
+            throw new Exception("Mundo no válido.");
+        }
+
+        File backupsDir = new File(getCurrentInstanceGameDir(), "backups");
+
+        if (!backupsDir.exists()) {
+            backupsDir.mkdirs();
+        }
+
+        String safeName = worldDir.getName().replaceAll("[\\\\/:*?\"<>|]", "_");
+        String timestamp = java.time.LocalDateTime.now()
+                .toString()
+                .replace(":", "-")
+                .replace(".", "-");
+
+        File target = new File(backupsDir, safeName + "-" + timestamp + ".zip");
+
+        zipDirectory(worldDir, target);
+
+        return target;
+    }
+
+    private void zipDirectory(File sourceDir, File targetZip) throws Exception {
+        java.util.zip.ZipOutputStream zos = null;
+
+        try {
+            zos = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(targetZip));
+            zipDirectoryRecursive(sourceDir, sourceDir, zos);
+        } finally {
+            if (zos != null) {
+                zos.close();
+            }
+        }
+    }
+
+    private void zipDirectoryRecursive(File rootDir, File current, java.util.zip.ZipOutputStream zos) throws Exception {
+        File[] files = current.listFiles();
+
+        if (files == null) {
+            return;
+        }
+
+        for (File file : files) {
+            String relative = rootDir.toPath().relativize(file.toPath()).toString().replace("\\", "/");
+
+            if (file.isDirectory()) {
+                zipDirectoryRecursive(rootDir, file, zos);
+            } else {
+                java.util.zip.ZipEntry entry = new java.util.zip.ZipEntry(relative);
+                zos.putNextEntry(entry);
+
+                java.io.FileInputStream in = null;
+
+                try {
+                    in = new java.io.FileInputStream(file);
+
+                    byte[] buffer = new byte[8192];
+                    int read;
+
+                    while ((read = in.read(buffer)) != -1) {
+                        zos.write(buffer, 0, read);
+                    }
+                } finally {
+                    if (in != null) {
+                        in.close();
+                    }
+                }
+
+                zos.closeEntry();
+            }
+        }
+    }
+
+    private long getDirectorySize(File file) {
+        if (file == null || !file.exists()) {
+            return 0;
+        }
+
+        if (file.isFile()) {
+            return file.length();
+        }
+
+        long size = 0;
+
+        File[] children = file.listFiles();
+
+        if (children != null) {
+            for (File child : children) {
+                size += getDirectorySize(child);
+            }
+        }
+
+        return size;
+    }
+
     private void installRequiredModrinthModForCurrentInstance(String slug, String displayName) throws Exception {
         if (slug == null || slug.trim().isEmpty()) {
             return;
@@ -9320,6 +9751,219 @@ public class LauncherUI extends Application {
                 installFabricWithLoader(version, selected.version, fabricBtn);
             }
         });
+    }
+
+    private void showScreenshotsDialog() {
+        final Stage dialog = new Stage();
+        dialog.setTitle("Capturas");
+        dialog.initModality(Modality.APPLICATION_MODAL);
+
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color: #f6f8fb;");
+
+        VBox header = new VBox(6);
+        header.setPadding(new Insets(22, 24, 14, 24));
+
+        Label title = new Label("Capturas");
+        title.setStyle("-fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: #111827;");
+
+        Label subtitle = new Label("Capturas de pantalla de la instancia actual.");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280;");
+
+        header.getChildren().addAll(title, subtitle);
+
+        VBox content = new VBox(14);
+        content.setPadding(new Insets(0, 24, 20, 24));
+        content.setStyle("-fx-background-color: #f6f8fb;");
+
+        HBox actions = new HBox(10);
+        actions.setAlignment(Pos.CENTER_LEFT);
+
+        Button refreshBtn = new Button("Actualizar");
+        refreshBtn.getStyleClass().add("secondary-button");
+
+        Button openFolderBtn = new Button("Abrir carpeta");
+        openFolderBtn.getStyleClass().add("secondary-button");
+
+        Button deleteBtn = new Button("Eliminar");
+        deleteBtn.getStyleClass().add("secondary-button");
+        deleteBtn.setDisable(true);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        actions.getChildren().addAll(refreshBtn, openFolderBtn, spacer, deleteBtn);
+
+        final ListView<File> screenshotsList = new ListView<File>();
+        screenshotsList.getStyleClass().add("list-view");
+        VBox.setVgrow(screenshotsList, Priority.ALWAYS);
+
+        screenshotsList.setCellFactory(new javafx.util.Callback<ListView<File>, ListCell<File>>() {
+            @Override
+            public ListCell<File> call(ListView<File> listView) {
+                return new ListCell<File>() {
+                    @Override
+                    protected void updateItem(final File item, boolean empty) {
+                        super.updateItem(item, empty);
+
+                        if (empty || item == null) {
+                            setText(null);
+                            setGraphic(null);
+                            return;
+                        }
+
+                        HBox row = new HBox(12);
+                        row.setAlignment(Pos.CENTER_LEFT);
+                        row.setPadding(new Insets(10));
+
+                        ImageView preview = new ImageView(new Image(item.toURI().toString(), 90, 54, true, true));
+                        preview.setFitWidth(90);
+                        preview.setFitHeight(54);
+                        preview.setPreserveRatio(true);
+                        preview.setSmooth(true);
+
+                        VBox info = new VBox(5);
+
+                        Label name = new Label(item.getName());
+                        name.setStyle("-fx-font-size: 14px; -fx-font-weight: 900; -fx-text-fill: #111827;");
+
+                        Label meta = new Label(formatFileSize(item.length()));
+                        meta.setStyle("-fx-font-size: 11px; -fx-text-fill: #6b7280;");
+
+                        info.getChildren().addAll(name, meta);
+                        row.getChildren().addAll(preview, info);
+
+                        setText(null);
+                        setGraphic(row);
+                    }
+                };
+            }
+        });
+
+        final Label status = new Label("Cargando capturas...");
+        status.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
+
+        content.getChildren().addAll(actions, screenshotsList, status);
+
+        screenshotsList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<File>() {
+            @Override
+            public void changed(ObservableValue<? extends File> observable, File oldValue, File newValue) {
+                deleteBtn.setDisable(newValue == null);
+            }
+        });
+
+        screenshotsList.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                if (event.getClickCount() == 2) {
+                    File selected = screenshotsList.getSelectionModel().getSelectedItem();
+
+                    if (selected != null) {
+                        openFile(selected);
+                    }
+                }
+            }
+        });
+
+        refreshBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                refreshScreenshotsList(screenshotsList, status);
+            }
+        });
+
+        openFolderBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                openFolder(getScreenshotsDir());
+            }
+        });
+
+        deleteBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                File selected = screenshotsList.getSelectionModel().getSelectedItem();
+
+                if (selected == null) {
+                    return;
+                }
+
+                if (selected.delete()) {
+                    showToast("Captura eliminada", "info");
+                }
+
+                refreshScreenshotsList(screenshotsList, status);
+            }
+        });
+
+        root.setTop(header);
+        root.setCenter(content);
+
+        refreshScreenshotsList(screenshotsList, status);
+
+        Scene scene = new Scene(root, 760, 620);
+
+        try {
+            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        } catch (Exception ignored) {
+        }
+
+        dialog.setScene(scene);
+        dialog.setMinWidth(700);
+        dialog.setMinHeight(540);
+        dialog.show();
+    }
+
+    private File getScreenshotsDir() {
+        File dir = new File(getCurrentInstanceGameDir(), "screenshots");
+
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        return dir;
+    }
+
+    private void refreshScreenshotsList(ListView<File> list, Label status) {
+        File dir = getScreenshotsDir();
+
+        list.getItems().clear();
+
+        File[] files = dir.listFiles(new java.io.FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                String lower = name.toLowerCase();
+                return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg");
+            }
+        });
+
+        if (files == null || files.length == 0) {
+            status.setText("No hay capturas en esta instancia.");
+            return;
+        }
+
+        java.util.Arrays.sort(files, new java.util.Comparator<File>() {
+            @Override
+            public int compare(File a, File b) {
+                return Long.compare(b.lastModified(), a.lastModified());
+            }
+        });
+
+        for (File file : files) {
+            list.getItems().add(file);
+        }
+
+        status.setText("Capturas encontradas: " + files.length);
+    }
+
+    private void openFile(File file) {
+        try {
+            if (file != null && file.exists()) {
+                Desktop.getDesktop().open(file);
+            }
+        } catch (Exception ex) {
+            statusLabel.setText("No se pudo abrir archivo: " + ex.getMessage());
+        }
     }
 
     private void updateDashboardStats(Instance instance) {
@@ -9966,6 +10610,101 @@ public class LauncherUI extends Application {
         Thread t = new Thread(task, "Import-Dropped-Modpack");
         t.setDaemon(true);
         t.start();
+    }
+
+    private String getCurrentJvmArgs() {
+        Instance instance = getCurrentInstance();
+
+        if (instance == null || instance.jvmArgs == null) {
+            return "";
+        }
+
+        return instance.jvmArgs.trim();
+    }
+
+    private void writeInstanceLaunchLog(String version, String username, int ram, File gameDir) {
+        try {
+            File logsDir = new File(gameDir, "logs");
+
+            if (!logsDir.exists()) {
+                logsDir.mkdirs();
+            }
+
+            File log = new File(logsDir, "launcher-instance.log");
+
+            PrintWriter writer = new PrintWriter(new FileWriter(log, true));
+
+            try {
+                writer.println("=== Launch at " + java.time.LocalDateTime.now() + " ===");
+                writer.println("Instance: " + (getCurrentInstance() == null ? "Unknown" : getCurrentInstance().name));
+                writer.println("Version: " + version);
+                writer.println("Username: " + username);
+                writer.println("RAM: " + ram + " GB");
+                writer.println("GameDir: " + gameDir.getAbsolutePath());
+                writer.println();
+            } finally {
+                writer.close();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void applyVersionFilter(String query, String filter) {
+        if (allVersions == null || versionBox == null) {
+            return;
+        }
+
+        String q = query == null ? "" : query.toLowerCase().trim();
+        String f = filter == null ? "Todas" : filter;
+
+        List<VersionEntry> filtered = new ArrayList<VersionEntry>();
+
+        for (VersionEntry v : allVersions) {
+            if (v == null || v.id == null) {
+                continue;
+            }
+
+            String id = v.id;
+            String lower = id.toLowerCase();
+
+            if (!q.isEmpty() && !lower.contains(q)) {
+                continue;
+            }
+
+            if ("Fabric".equals(f) && !lower.contains("fabric")) {
+                continue;
+            }
+
+            if ("Vanilla".equals(f) && lower.contains("fabric")) {
+                continue;
+            }
+
+            if ("Instaladas".equals(f) && !isVersionInstalled(id)) {
+                continue;
+            }
+
+            filtered.add(v);
+        }
+
+        versionBox.getItems().setAll(filtered);
+
+        if (!filtered.isEmpty()) {
+            versionBox.getSelectionModel().selectFirst();
+        }
+    }
+
+    private boolean isVersionInstalled(String versionId) {
+        if (versionId == null || versionId.trim().isEmpty()) {
+            return false;
+        }
+
+        File json = new File(
+                VersionManager.MC_DIR,
+                "versions/" + versionId + "/" + versionId + ".json"
+        );
+
+        return json.exists();
     }
 
     private File installSelectedContentFile(ModrinthClient.ModResult selected,
